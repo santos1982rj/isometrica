@@ -8,12 +8,10 @@ COPY backend/tsconfig.json ./
 COPY backend/src ./src
 RUN npm install --legacy-peer-deps && npx prisma generate && npm run build
 
-# Adicione esta linha para rodar as migrations automaticamente
-RUN npx prisma migrate deploy
+# Copia o script de inicialização
+COPY backend/start.sh ./
+RUN chmod +x start.sh
 
 EXPOSE 3001
 
-RUN npx prisma migrate deploy
-
-
-CMD ["node", "dist/index.js"]
+CMD ["./start.sh"]
