@@ -1,0 +1,11 @@
+/* ═══════════════════════════════════════════════════════════════
+   NÓ NA ARMADURA – ENTRY POINT CSS
+   ═══════════════════════════════════════════════════════════════ */
+
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));  /* <-- adicione esta linha */
+@import "./styles/tokens.css";
+@import "./styles/global.css";
+
+/* ─── Estilos de Componentes Externos ───────────────────────── */
+/* Serão movidos para components.css futuramente */
