@@ -1,0 +1,397 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  STUDENT
+  PROFESSOR
+  ADMIN
+}
+
+enum AccessType {
+  FREE
+  SUBSCRIPTION
+  PREMIUM
+}
+
+enum QuestionDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum BloomLevel {
+  REMEMBER
+  UNDERSTAND
+  APPLY
+  ANALYZE
+  EVALUATE
+  CREATE
+}
+
+enum EventType {
+  LESSON_STARTED
+  LESSON_COMPLETED
+  QUESTION_ANSWERED
+  QUESTION_CORRECT
+  QUESTION_INCORRECT
+  HINT_USED
+  CONVERSATION_STARTED
+  MESSAGE_SENT
+  RECOMMENDATION_VIEWED
+  TUTOR_ACTION_TRIGGERED
+  ENROLLMENT_CREATED
+  DIAGNOSTIC_COMPLETED
+  ACHIEVEMENT_UNLOCKED
+  STREAK_UPDATED
+  LEVEL_UP
+  SUBSCRIPTION_CREATED
+  SUBSCRIPTION_CANCELLED
+  PAYMENT_SUCCEEDED
+  PAYMENT_FAILED
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String?
+  passwordHash  String?
+  imageUrl      String?
+  role          UserRole @default(STUDENT)
+  university    String?
+  period        Int?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  enrollments       Enrollment[]
+  lessonProgresses  LessonProgress[]
+  questionAttempts  QuestionAttempt[]
+  diagnostics       Diagnostic[]
+  conversations     Conversation[]
+  recommendations   Recommendation[]
+  gamification      GamificationProfile?
+  subscriptions     Subscription[]
+  purchases         Purchase[]
+  events            Event[]
+  tutorActions      TutorAction[]
+}
+
+model Subject {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  courses Course[]
+  topics  Topic[]
+}
+
+model Course {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  imageUrl    String?
+  subjectId   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  subject     Subject     @relation(fields: [subjectId], references: [id])
+  modules     Module[]
+  enrollments Enrollment[]
+}
+
+model Module {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  order       Int
+  courseId    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  course  Course   @relation(fields: [courseId], references: [id])
+  lessons Lesson[]
+}
+
+model Lesson {
+  id         String     @id @default(cuid())
+  title      String
+  contentUrl String?
+  content    String?
+  type       String     @default("video")
+  order      Int
+  accessType AccessType @default(FREE)
+  moduleId   String
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  module          Module            @relation(fields: [moduleId], references: [id])
+  lessonProgresses LessonProgress[]
+}
+
+model Topic {
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  subjectId     String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  subject      Subject           @relation(fields: [subjectId], references: [id])
+  questions    Question[]
+  studentModel StudentModel[]
+}
+
+model Question {
+  id          String           @id @default(cuid())
+  text        String
+  difficulty  QuestionDifficulty @default(MEDIUM)
+  bloomLevel  BloomLevel       @default(REMEMBER)
+  explanation String?
+  topicId     String
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  topic           Topic              @relation(fields: [topicId], references: [id])
+  alternatives    Alternative[]
+  questionAttempts QuestionAttempt[]
+}
+
+model Alternative {
+  id         String   @id @default(cuid())
+  text       String
+  isCorrect  Boolean  @default(false)
+  questionId String
+  createdAt  DateTime @default(now())
+
+  question Question @relation(fields: [questionId], references: [id])
+}
+
+model Enrollment {
+  id        String   @id @default(cuid())
+  userId    String
+  courseId  String
+  progress  Float    @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id])
+  course Course @relation(fields: [courseId], references: [id])
+
+  @@unique([userId, courseId])
+}
+
+model LessonProgress {
+  id        String   @id @default(cuid())
+  userId    String
+  lessonId  String
+  completed Boolean  @default(false)
+  progress  Float    @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id])
+  lesson Lesson @relation(fields: [lessonId], references: [id])
+
+  @@unique([userId, lessonId])
+}
+
+model QuestionAttempt {
+  id          String           @id @default(cuid())
+  userId      String
+  questionId  String
+  selectedId  String?
+  correct     Boolean
+  timeSpent   Int?
+  hintUsed    Boolean          @default(false)
+  score       Float?
+  createdAt   DateTime         @default(now())
+
+  user     User     @relation(fields: [userId], references: [id])
+  question Question @relation(fields: [questionId], references: [id])
+}
+
+model StudentModel {
+  id        String   @id @default(cuid())
+  userId    String
+  topicId   String
+  proficiency Float  @default(0.5)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  topic Topic @relation(fields: [topicId], references: [id])
+
+  @@unique([userId, topicId])
+}
+
+model Diagnostic {
+  id        String   @id @default(cuid())
+  userId    String
+  snapshot  Json
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Conversation {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id])
+  messages Message[]
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  role           String
+  content        String
+  metadata       Json?
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+}
+
+model Recommendation {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  description String?
+  type        String
+  link        String?
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model TutorAction {
+  id          String   @id @default(cuid())
+  userId      String
+  actionType  String
+  description String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Event {
+  id        String    @id @default(cuid())
+  userId    String
+  type      EventType
+  metadata  Json?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model GamificationProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+  xp     Int    @default(0)
+  level  Int    @default(1)
+  streak Int    @default(0)
+
+  user        User          @relation(fields: [userId], references: [id])
+  achievements Achievement[]
+  missions     Mission[]
+}
+
+model Achievement {
+  id                   String   @id @default(cuid())
+  gamificationProfileId String
+  name                 String
+  description          String?
+  icon                 String?
+  unlockedAt           DateTime @default(now())
+
+  profile GamificationProfile @relation(fields: [gamificationProfileId], references: [id])
+}
+
+model Mission {
+  id                   String  @id @default(cuid())
+  gamificationProfileId String
+  name                 String
+  description          String?
+  progress             Int     @default(0)
+  target               Int
+  completed            Boolean @default(false)
+
+  profile GamificationProfile @relation(fields: [gamificationProfileId], references: [id])
+}
+
+model Plan {
+  id          String     @id @default(cuid())
+  name        String
+  description String?
+  price       Decimal
+  duration    Int
+  active      Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id        String   @id @default(cuid())
+  userId    String
+  planId    String
+  status    String   @default("active")
+  startDate DateTime @default(now())
+  endDate   DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User @relation(fields: [userId], references: [id])
+  plan      Plan @relation(fields: [planId], references: [id])
+  payments  Payment[]
+}
+
+model Payment {
+  id           String   @id @default(cuid())
+  subscriptionId String?
+  userId       String
+  amount       Decimal
+  currency     String   @default("BRL")
+  status       String
+  gatewayId    String?
+  createdAt    DateTime @default(now())
+
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id])
+}
+
+model Coupon {
+  id         String   @id @default(cuid())
+  code       String   @unique
+  discount   Decimal
+  expiresAt  DateTime?
+  active     Boolean  @default(true)
+  maxUses    Int?
+  usedCount  Int      @default(0)
+  createdAt  DateTime @default(now())
+  purchases  Purchase[]
+}
+
+model Purchase {
+  id        String   @id @default(cuid())
+  userId    String
+  itemType  String
+  itemId    String
+  amount    Decimal
+  couponId  String?
+  createdAt DateTime @default(now())
+
+  user   User    @relation(fields: [userId], references: [id])
+  coupon Coupon? @relation(fields: [couponId], references: [id])
+}

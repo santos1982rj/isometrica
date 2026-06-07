@@ -1,0 +1,103 @@
+import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
+import { PrismaService } from '../prisma/prisma.service';
+import { SignupDto } from './dto/signup.dto';
+import { LoginDto } from './dto/login.dto';
+
+@Injectable()
+export class AuthService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly jwtService: JwtService,
+  ) {}
+
+  async cadastro(dto: SignupDto) {
+    const existente = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    if (existente) {
+      throw new ConflictException('Email já cadastrado');
+    }
+
+    const senhaHash = await bcrypt.hash(dto.senha, 10);
+
+    const usuario = await this.prisma.user.create({
+      data: {
+        email: dto.email,
+        passwordHash: senhaHash,
+        name: dto.nome,
+        role: dto.papel ?? 'STUDENT',
+        university: dto.universidade,
+        period: dto.periodo,
+      },
+    });
+
+    return this.gerarToken(usuario.id, usuario.email);
+  }
+
+  async login(dto: LoginDto) {
+    const usuario = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    if (!usuario) {
+      throw new UnauthorizedException('Email ou senha inválidos');
+    }
+
+    if (!usuario.passwordHash) {
+      throw new UnauthorizedException('Email ou senha inválidos');
+    }
+
+    const senhaValida = await bcrypt.compare(dto.senha, usuario.passwordHash);
+    if (!senhaValida) {
+      throw new UnauthorizedException('Email ou senha inválidos');
+    }
+
+    return this.gerarToken(usuario.id, usuario.email);
+  }
+
+  async perfil(usuarioId: string) {
+    const usuario = await this.prisma.user.findUnique({
+      where: { id: usuarioId },
+      select: { id: true, email: true, name: true, role: true, university: true, period: true, createdAt: true },
+    });
+    return usuario;
+  }
+
+  async esqueceuSenha(email: string) {
+    const usuario = await this.prisma.user.findUnique({ where: { email } });
+    if (!usuario) {
+      return { mensagem: 'Se o email existir, você receberá um link de recuperação.' };
+    }
+
+    const resetToken = this.jwtService.sign(
+      { sub: usuario.id, email: usuario.email, tipo: 'reset_senha' },
+      { expiresIn: '1h' },
+    );
+
+    return { mensagem: 'Se o email existir, você receberá um link de recuperação.', reset_token: resetToken };
+  }
+
+  async recuperarSenha(token: string, novaSenha: string) {
+    try {
+      const payload = this.jwtService.verify(token) as { sub: string; tipo: string };
+      if (payload.tipo !== 'reset_senha') {
+        throw new UnauthorizedException('Token inválido');
+      }
+
+      const senhaHash = await bcrypt.hash(novaSenha, 10);
+      await this.prisma.user.update({
+        where: { id: payload.sub },
+        data: { passwordHash: senhaHash },
+      });
+
+      return { mensagem: 'Senha redefinida com sucesso' };
+    } catch {
+      throw new UnauthorizedException('Token inválido ou expirado');
+    }
+  }
+
+  private gerarToken(usuarioId: string, email: string) {
+    const payload = { sub: usuarioId, email };
+    return {
+      access_token: this.jwtService.sign(payload),
+      usuario: { id: usuarioId, email },
+    };
+  }
+}
