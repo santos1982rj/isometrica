@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: isometrica-api
+    env: node
+    buildCommand: pnpm install && pnpm build --filter @isometrica/api
+    startCommand: node apps/api/dist/main
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: NODE_VERSION
+        value: 22
