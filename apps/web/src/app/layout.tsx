@@ -17,8 +17,24 @@ const fontDisplay = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Isométrica",
+  title: { default: "Isométrica", template: "%s | Isométrica" },
   description: "Plataforma inteligente de evolução acadêmica para Engenharia",
+  openGraph: {
+    title: "Isométrica",
+    description: "Plataforma inteligente de evolução acadêmica para Engenharia",
+    type: "website",
+    locale: "pt_BR",
+    siteName: "Isométrica",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Isométrica",
+    description: "Plataforma inteligente de evolução acadêmica para Engenharia",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({

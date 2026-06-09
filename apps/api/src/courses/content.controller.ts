@@ -1,12 +1,27 @@
-import { Controller, Get, Post, Put, Delete, Param, Body } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, UsePipes } from '@nestjs/common';
 import { ContentService } from './content.service';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Public } from '../auth/decorators/public.decorator';
 import { UserRole } from '../generated/prisma/enums';
+import { SanitizePipe } from '../common/pipes/sanitize.pipe';
 
 @Controller()
 export class ContentController {
   constructor(private readonly contentService: ContentService) {}
+
+  @Post('modules/:moduleId/lessons')
+  @Roles(UserRole.PROFESSOR, UserRole.ADMIN)
+  @UsePipes(new SanitizePipe())
+  createLesson(@Param('moduleId') moduleId: string, @Body() body: { title: string; type: string; order: number; content?: string; videoUrl?: string; free?: boolean }) {
+    return this.contentService.createLesson(moduleId, body);
+  }
+
+  @Put('lessons/:id')
+  @Roles(UserRole.PROFESSOR, UserRole.ADMIN)
+  @UsePipes(new SanitizePipe())
+  updateLesson(@Param('id') id: string, @Body() body: { title?: string; content?: string; videoUrl?: string }) {
+    return this.contentService.updateLesson(id, body);
+  }
 
   @Get('lessons/:id')
   @Public()
@@ -50,19 +65,6 @@ export class ContentController {
   @Roles(UserRole.ADMIN)
   removeModule(@Param('id') id: string) {
     return this.contentService.removeModule(id);
-  }
-
-  // Lessons
-  @Post('modules/:moduleId/lessons')
-  @Roles(UserRole.PROFESSOR, UserRole.ADMIN)
-  createLesson(@Param('moduleId') moduleId: string, @Body() body: { title: string; type: string; order: number; content?: string; videoUrl?: string; free?: boolean }) {
-    return this.contentService.createLesson(moduleId, body);
-  }
-
-  @Put('lessons/:id')
-  @Roles(UserRole.PROFESSOR, UserRole.ADMIN)
-  updateLesson(@Param('id') id: string, @Body() body: { title?: string; content?: string; videoUrl?: string }) {
-    return this.contentService.updateLesson(id, body);
   }
 
   @Delete('lessons/:id')

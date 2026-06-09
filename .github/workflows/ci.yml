@@ -15,6 +15,7 @@ jobs:
       GROQ_API_KEY: ""
       REDIS_URL: ""
       DATABASE_URL: ""
+      NEXT_PUBLIC_API_URL: "http://localhost:3001/api"
 
     steps:
       - uses: actions/checkout@v4
@@ -30,4 +31,23 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - run: pnpm test
+      - name: TypeScript check (API)
+        run: pnpm --filter @isometrica/api exec tsc --noEmit
+
+      - name: TypeScript check (Web)
+        run: pnpm --filter @isometrica/web exec tsc --noEmit
+
+      - name: Lint
+        run: pnpm lint
+        continue-on-error: true
+
+      - name: Prisma validate
+        run: pnpm --filter @isometrica/api exec prisma validate
+        env:
+          DATABASE_URL: "postgresql://placeholder:placeholder@localhost:5432/placeholder"
+
+      - name: Build
+        run: pnpm build
+
+      - name: Test
+        run: pnpm test

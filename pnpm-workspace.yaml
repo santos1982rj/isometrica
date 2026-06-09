@@ -4,6 +4,7 @@ packages:
 allowBuilds:
   '@nestjs/core': true
   '@prisma/engines': true
+  '@scarf/scarf': true
   bcrypt: true
   esbuild: true
   msw: true
@@ -11,3 +12,5 @@ allowBuilds:
   sharp: true
   unrs-resolver: true
 ignoreScripts: false
+onlyBuiltDependencies:
+  - '@scarf/scarf'
