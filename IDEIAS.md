@@ -174,18 +174,57 @@
 
 ---
 
+## 🧠 Banco de Questões (Novo — Junho 2026)
+
+| # | Ideia | Status |
+|---|-------|--------|
+| 1 | **Árvore de Tópicos** — Visual tipo file explorer com disciplina → tópico → contagem de questões | ✅ |
+| 2 | **Filtro Multi-critério** — Busca por texto, tópico, dificuldade, tag, concurso, banca, ano | ✅ |
+| 3 | **Estatísticas por Questão** — % acerto, tentativas, tempo médio, distribuição por alternativa | ✅ |
+| 4 | **Modo Domínio** — 10 acertos consecutivos para dominar um tópico | ✅ |
+| 5 | **Gerador com IA** — Cria questões automaticamente via OpenAI por tópico | ✅ |
+| 6 | **Modo Concurso / Simulado** — Filtrar questões por concurso + banca + ano | ✅ |
+| 7 | **Importação CSV/JSON** — Upload em lote de questões prontas | ❌ |
+| 8 | **Comentários por Questão** — Discussão entre alunos sobre cada questão | ❌ |
+| 9 | **Modo "Caça ao Tópico"** — Seleciona um tópico e sistema cria trilha de questões em dificuldade crescente | 💡 |
+| 10 | **Questão do Dia** — Notificação diária com 1 questão aleatória do nível do aluno | 💡 |
+| 11 | **Concurso Explorer** — Navegação visual: "Petrobras 2024 → CESGRANRIO → Eng. Civil → 45 questões" | 💡 |
+| 12 | **Gráfico de Evolução** — Acertos por mês, por tópico, por dificuldade | 💡 |
+| 13 | **Revisão Espaçada no Banco** — Questões erradas voltam automaticamente (1d, 3d, 7d, 15d, 30d) | 💡 |
+
+## ✅ Implementados (Junho 2026)
+
+| # | Ideia Original | Onde |
+|---|----------------|------|
+| — | **Quiz interativo nas aulas** (Top 1) | Aba Exercícios no Player |
+| — | **Anotações persistentes por aula** (Top 2) | Aba Anotações com auto-save |
+| — | **Integração LLM real no Tutor IA** (Top 3) | Tutor com streaming OpenAI |
+| — | **Feed de Erros** (Top 5) | `/erros` com refazer questões |
+| — | **"Explique por que errei"** (Top 6) | Botão no quiz → Tutor IA |
+| — | **"O Que Estudar Hoje?"** (Top 7) | Dashboard com next-lessons dinâmico |
+| — | **Certificado com Proficiência** (Top 8) | `/certificados` com nota 0-100 |
+| — | **Wizard de Criação** (Ideia 25) | 4 etapas: curso → módulos → aulas → config |
+| — | **Degustação (aulas grátis)** (Ideia 33) | Badge "Grátis" + toggle no wizard |
+| — | **Materiais da Aula** (Ideia 21) | Upload/download por aula |
+| — | **Perfil Público** (Ideia 16) | `/u/[id]` com certificados e gamificação |
+| — | **Paginação** (Ideia -) | Componente reutilizável |
+| — | **Skeletons consistentes** (Ideia -) | StatSkeleton, ListSkeleton, CardSkeleton |
+| — | **Toasts** (Ideia -) | Sonner substituindo alert() |
+| — | **16 testes unitários** (Ideia -) | RolesGuard + GamificationService |
+| — | **Email transacional** (Ideia -) | Reset de senha + boas-vindas via Resend |
+
 ## 🎯 Prioridade Geral (Top 10)
 
-1. 🔥 **Quiz interativo nas aulas** (questões do seed já existem)
-2. 🔥 **Anotações persistentes por aula** (salvar no backend)
-3. 🔥 **Integração LLM real no Tutor IA** (OpenAI/Claude)
-4. 🔥 **Revisão Espaçada** (questões erradas revisitadas em 1, 3, 7 dias)
-5. 🔥 **Feed de Erros** (página dedicada com questões erradas ordenadas)
-6. 🔥 **"Explique por que errei"** (Tutor abre com contexto do erro)
-7. 🔥 **"O Que Estudar Hoje?"** (Home page guiada por IA)
-8. 🔥 **Certificado com Proficiência** (nota 0-100 + comparativo)
-9. 🔥 **Simulador 3D no Navegador** (pórtico interativo)
-10. 🔥 **Professor Convidado (Marketplace)** (catálogo cresce sem custo fixo)
+1. 🔥 **MercadoPago real** — Cobrar assinatura de verdade com webhook
+2. 🔥 **Seed 500+ questões** — Conteúdo real de engenharia no banco de questões
+3. 🔥 **Revisão Espaçada** — Questões erradas revisitadas em 1, 3, 7 dias
+4. 🔥 **Importação CSV/JSON** — Upload de questões prontas
+5. ⚡ **Busca global** — Search no header funcional
+6. ⚡ **Preencher packages/** — `@isometrica/contracts`, `@isometrica/ui`
+7. ⚡ **PWA / Modo Offline** — Baixar aulas sem internet
+8. 💡 **Simulador 3D no Navegador** — Pórtico interativo
+9. 💡 **Professor Convidado (Marketplace)** — Catálogo cresce sem custo fixo
+10. 🌱 **Comentários por Questão** — Discussão entre alunos
 
 ---
 

@@ -86,6 +86,7 @@ model User {
   events            Event[]
   tutorActions      TutorAction[]
   certificates      Certificate[]
+  questionComments  QuestionComment[]
 }
 
 model Subject {
@@ -166,31 +167,95 @@ model Topic {
   studentModel StudentModel[]
 }
 
-model Question {
-  id          String           @id @default(cuid())
-  text        String
-  difficulty  QuestionDifficulty @default(MEDIUM)
-  bloomLevel  BloomLevel       @default(REMEMBER)
-  explanation String?
-  topicId     String
-  lessonId    String?
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+enum QuestionType {
+  MULTIPLA_ESCOLHA
+  VERDADEIRO_FALSO
+  DISSERTATIVA
+  ASSOCIACAO
+}
 
-  topic           Topic              @relation(fields: [topicId], references: [id])
-  lesson          Lesson?            @relation(fields: [lessonId], references: [id])
-  alternatives    Alternative[]
+enum QuestionStatus {
+  RASCUNHO
+  PUBLICADA
+  DESATIVADA
+}
+
+model Question {
+  id                String             @id @default(cuid())
+  text              String
+  type              QuestionType       @default(MULTIPLA_ESCOLHA)
+  difficulty        QuestionDifficulty @default(MEDIUM)
+  bloomLevel        BloomLevel         @default(REMEMBER)
+  estimatedTime     Int                @default(5)
+  explanation       String?
+  resolutionUrl     String?
+  status            QuestionStatus     @default(PUBLICADA)
+  topicId           String
+  lessonId          String?
+  examId            String?
+  sourceQuestionId  String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  topic            Topic              @relation(fields: [topicId], references: [id])
+  lesson           Lesson?            @relation(fields: [lessonId], references: [id])
+  exam             Exam?              @relation(fields: [examId], references: [id])
+  sourceQuestion   Question?          @relation("QuestionRelation", fields: [sourceQuestionId], references: [id])
+  derivedQuestions Question[]         @relation("QuestionRelation")
+  alternatives     Alternative[]
   questionAttempts QuestionAttempt[]
+  tags             QuestionTag[]
+  stats            QuestionStats?
+  comments         QuestionComment[]
 }
 
 model Alternative {
   id         String   @id @default(cuid())
   text       String
   isCorrect  Boolean  @default(false)
+  feedback   String?
   questionId String
   createdAt  DateTime @default(now())
 
   question Question @relation(fields: [questionId], references: [id])
+}
+
+model Exam {
+  id           String   @id @default(cuid())
+  name         String
+  board        String?
+  year         Int?
+  role         String?
+  organization String?
+  createdAt    DateTime @default(now())
+
+  questions Question[]
+}
+
+model QuestionTag {
+  id         String @id @default(cuid())
+  questionId String
+  tag        String
+  question   Question @relation(fields: [questionId], references: [id])
+}
+
+model QuestionStats {
+  id              String  @id @default(cuid())
+  questionId      String  @unique
+  totalAttempts   Int     @default(0)
+  correctAttempts Int     @default(0)
+  avgTimeSeconds  Float   @default(0)
+  question        Question @relation(fields: [questionId], references: [id])
+}
+
+model QuestionComment {
+  id         String   @id @default(cuid())
+  questionId String
+  userId     String
+  content    String
+  createdAt  DateTime @default(now())
+  question   Question @relation(fields: [questionId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
 }
 
 model Enrollment {

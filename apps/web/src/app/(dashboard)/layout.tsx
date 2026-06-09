@@ -34,6 +34,7 @@ import {
   Award,
   CreditCard,
   Gamepad2,
+  FileQuestion,
   Users,
   User,
   Settings,
@@ -47,6 +48,7 @@ import {
 const menuEstudante = [
   { rotulo: 'Dashboard', href: '/dashboard', icone: LayoutDashboard },
   { rotulo: 'Meu Perfil', href: '/perfil', icone: User },
+  { rotulo: 'Questões', href: '/banco-questoes', icone: FileQuestion },
   { rotulo: 'Meus Cursos', href: '/cursos', icone: BookOpen },
   { rotulo: 'Gamificação', href: '/gamificacao', icone: Gamepad2 },
   { rotulo: 'Tutor IA', href: '/tutor', icone: Bot },

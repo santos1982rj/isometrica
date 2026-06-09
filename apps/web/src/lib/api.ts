@@ -165,6 +165,35 @@ export const api = {
     removerUsuario: (id: string) => request<{ message: string }>(`/usuarios/${id}`, { method: 'DELETE' }),
   },
 
+  questions: {
+    listar: (params?: Record<string, string>) => request<any>(`/questions?${new URLSearchParams(params ?? {}).toString()}`),
+
+    obter: (id: string) => request<any>(`/questions/${id}`),
+
+    criar: (data: any) => request<any>('/questions', { method: 'POST', body: JSON.stringify(data) }),
+
+    atualizar: (id: string, data: any) => request<any>(`/questions/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+
+    remover: (id: string) => request<any>(`/questions/${id}`, { method: 'DELETE' }),
+
+    arvore: () => request<any[]>('/questions/tree'),
+
+    tags: () => request<any[]>('/questions/tags'),
+
+    exames: (params?: Record<string, string>) => request<any>(`/questions/exams?${new URLSearchParams(params ?? {}).toString()}`),
+
+    criarExame: (data: any) => request<any>('/questions/exams', { method: 'POST', body: JSON.stringify(data) }),
+
+    stats: (id: string) => request<any>(`/questions/stats/${id}`),
+
+    dominio: (topicId: string) => request<any>(`/questions/mastery/${topicId}`),
+
+    simulado: (examId: string, limit = 10) => request<any>(`/questions/simulado/${examId}?limit=${limit}`),
+
+    gerarComIA: (topicId: string, count = 3, difficulty?: string) =>
+      request<any>(`/questions/generate/${topicId}`, { method: 'POST', body: JSON.stringify({ count, difficulty }) }),
+  },
+
   ai: {
     conversas: (userId: string) => request<Conversa[]>(`/ai/conversations/user/${userId}`),
     criarConversa: (userId: string, titulo?: string) =>

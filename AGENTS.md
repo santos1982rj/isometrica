@@ -111,7 +111,7 @@ Plataforma inteligente de evolução acadêmica para estudantes de Engenharia, c
 
 - **skill-creator** — em `~/.config/opencode/skills/skill-creator/`, para criar/editar skills
 
-## Status Atual — 24 Rotas (Junho 2026)
+## Status Atual — 25 Rotas (Junho 2026)
 
 ### 🎓 ESTUDANTE
 | Página | O que faz | Status |
@@ -128,6 +128,7 @@ Plataforma inteligente de evolução acadêmica para estudantes de Engenharia, c
 | `/erros` | Feed de Erros com refazer questões | ✅ |
 | `/perfil` | Perfil com XP, streak, certificados, cursos em andamento | ✅ |
 | `/perfil/editar` | Editar perfil (nome, bio, universidade, período) | ✅ |
+| `/banco-questoes` | Banco de Questões com árvore, filtros, estatísticas, modo domínio | ✅ |
 
 ### 👨‍🏫 PROFESSOR
 | Página | O que faz | Status |

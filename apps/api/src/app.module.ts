@@ -11,6 +11,7 @@ import { AiModule } from './ai/ai.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { GamificationModule } from './gamification/gamification.module';
 import { FinancialModule } from './financial/financial.module';
+import { QuestionsModule } from './questions/questions.module';
 import { ProfileModule } from './profile/profile.module';
 import { EmailModule } from './email/email.module';
 import { AppController } from './app.controller';
@@ -31,6 +32,7 @@ import { AppService } from './app.service';
     GamificationModule,
     FinancialModule,
     ProfileModule,
+    QuestionsModule,
     EmailModule,
   ],
   controllers: [AppController],
