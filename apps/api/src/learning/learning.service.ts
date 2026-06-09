@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventBusService } from '../event-bus/event-bus.service';
 import { EventType } from '../event-bus/interfaces/event.interface';
@@ -25,11 +25,178 @@ export class LearningService {
     return enrollment;
   }
 
+  async checkEnrollment(userId: string, courseId: string) {
+    const enrollment = await this.prisma.enrollment.findFirst({
+      where: { userId, courseId },
+    });
+    return { enrolled: !!enrollment, enrollment };
+  }
+
   findEnrollmentsByUser(userId: string) {
     return this.prisma.enrollment.findMany({
       where: { userId },
       include: { course: true },
     });
+  }
+
+  async markProgress(userId: string, lessonId: string, completed: boolean) {
+    const progress = await this.prisma.lessonProgress.upsert({
+      where: { userId_lessonId: { userId, lessonId } },
+      update: { completed, progress: completed ? 100 : 0 },
+      create: { userId, lessonId, completed, progress: completed ? 100 : 0 },
+    });
+
+    if (completed) {
+      await this.eventBus.publish({
+        type: EventType.LESSON_COMPLETED,
+        userId,
+        timestamp: new Date(),
+        metadata: { lessonId },
+      });
+    }
+
+    return progress;
+  }
+
+  async getCourseProgress(userId: string, courseId: string) {
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+      include: { modules: { include: { lessons: true } } },
+    });
+    if (!course) return { total: 0, completed: 0, percentage: 0 };
+
+    const lessonIds = course.modules.flatMap((m) => m.lessons.map((l) => l.id));
+    const completed = await this.prisma.lessonProgress.count({
+      where: { userId, lessonId: { in: lessonIds }, completed: true },
+    });
+
+    return {
+      total: lessonIds.length,
+      completed,
+      percentage: lessonIds.length > 0 ? Math.round((completed / lessonIds.length) * 100) : 0,
+    };
+  }
+
+  async generateCertificate(userId: string, courseId: string) {
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+      include: { modules: { include: { lessons: true } }, subject: true },
+    });
+    if (!course) throw new NotFoundException('Curso não encontrado');
+    if (!course.certificateEnabled) {
+      throw new Error('Este curso não oferece certificado');
+    }
+
+    const progress = await this.getCourseProgress(userId, courseId);
+    if (progress.percentage < 100) {
+      throw new Error('Complete todas as aulas para obter o certificado');
+    }
+
+    const attempts = await this.prisma.questionAttempt.findMany({
+      where: { userId, question: { topic: { subjectId: course.subjectId ?? undefined } } },
+    });
+    const acertos = attempts.filter((a) => a.correct).length;
+    const proficiency = attempts.length > 0 ? Math.round((acertos / attempts.length) * 100) : 0;
+    const totalHours = course.modules.reduce((h, m) => h + m.lessons.length, 0);
+
+    const existing = await this.prisma.certificate.findUnique({
+      where: { userId_courseId: { userId, courseId } },
+    });
+    if (existing) return existing;
+
+    return this.prisma.certificate.create({
+      data: {
+        userId,
+        courseId,
+        title: course.name,
+        proficiency,
+        totalHours,
+      },
+      include: { course: { include: { subject: true } } },
+    });
+  }
+
+  getUserCertificates(userId: string) {
+    return this.prisma.certificate.findMany({
+      where: { userId },
+      include: { course: { include: { subject: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async getNextLessons(userId: string) {
+    const enrollments = await this.prisma.enrollment.findMany({
+      where: { userId },
+      include: {
+        course: {
+          include: {
+            modules: {
+              include: { lessons: true },
+              orderBy: { order: 'asc' },
+            },
+          },
+        },
+      },
+    });
+
+    const result = []
+    for (const enrollment of enrollments) {
+      const allLessons = enrollment.course.modules.flatMap((m) => m.lessons);
+      const completed = await this.prisma.lessonProgress.findMany({
+        where: { userId, lessonId: { in: allLessons.map((l) => l.id) }, completed: true },
+      });
+      const completedIds = new Set(completed.map((p) => p.lessonId));
+      const nextLesson = allLessons.find((l) => !completedIds.has(l.id));
+
+      if (nextLesson) {
+        const pct = allLessons.length > 0 ? Math.round((completedIds.size / allLessons.length) * 100) : 0;
+        result.push({
+          courseId: enrollment.course.id,
+          courseName: enrollment.course.name,
+          lessonId: nextLesson.id,
+          lessonTitle: nextLesson.title,
+          type: nextLesson.type,
+          progress: pct,
+          totalLessons: allLessons.length,
+          completedLessons: completedIds.size,
+        });
+      }
+    }
+
+    // Prioritize by lowest proficiency topics
+    const model = await this.getStudentModel(userId);
+    const lowTopics = model?.filter((m: any) => m.proficiency < 0.5) ?? [];
+
+    // Sort: courses with low proficiency topics first
+    result.sort((a, b) => a.progress - b.progress);
+
+    return { nextLessons: result.slice(0, 5), topicsToReview: lowTopics.slice(0, 5) };
+  }
+
+  async getWeekPlan(userId: string) {
+    const next = await this.getNextLessons(userId);
+    const weekDays = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo']
+    const plan = weekDays.map((day, i) => ({
+      day,
+      lesson: i < next.nextLessons.length ? next.nextLessons[i] : null,
+      completed: false,
+    }));
+    return { plan, stats: { total: next.nextLessons.length, thisWeek: Math.min(next.nextLessons.length, 5) } };
+  }
+
+  async saveNote(userId: string, lessonId: string, notes: string) {
+    return this.prisma.lessonProgress.upsert({
+      where: { userId_lessonId: { userId, lessonId } },
+      update: { notes },
+      create: { userId, lessonId, notes },
+    });
+  }
+
+  async getNote(userId: string, lessonId: string) {
+    const progress = await this.prisma.lessonProgress.findUnique({
+      where: { userId_lessonId: { userId, lessonId } },
+    });
+    return { notes: progress?.notes ?? '' };
   }
 
   async submitAttempt(data: {
@@ -58,6 +225,29 @@ export class LearningService {
     });
 
     return attempt;
+  }
+
+  async getUserErrors(userId: string) {
+    const attempts = await this.prisma.questionAttempt.findMany({
+      where: { userId, correct: false },
+      include: {
+        question: { include: { alternatives: true, topic: { include: { subject: true } } } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Group by question to avoid duplicates
+    const seen = new Set<string>()
+    return attempts.filter((a) => {
+      if (seen.has(a.questionId)) return false
+      seen.add(a.questionId)
+      return true
+    });
+  }
+
+  async clearUserErrors(userId: string) {
+    await this.prisma.questionAttempt.deleteMany({ where: { userId, correct: false } });
+    return { message: 'Histórico de erros limpo' };
   }
 
   getStudentModel(userId: string) {

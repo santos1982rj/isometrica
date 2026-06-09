@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Res } from '@nestjs/common';
+import { Response } from 'express';
 import { AiService } from './ai.service';
 
 @Controller('ai')
@@ -13,6 +14,24 @@ export class AiController {
   @Post('conversations/:id/messages')
   addMessage(@Param('id') id: string, @Body() body: { role: string; content: string }) {
     return this.aiService.addMessage({ conversationId: id, ...body });
+  }
+
+  @Post('conversations/:id/stream')
+  async streamMessage(@Param('id') id: string, @Body() body: { role: string; content: string }, @Res() res: Response) {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+
+    const userMsg = await this.aiService.addMessage({ conversationId: id, role: 'user', content: body.content });
+
+    const reply = await this.aiService.streamReply(id, res);
+
+    if (reply) {
+      await this.aiService.addMessage({ conversationId: id, role: 'assistant', content: reply });
+    }
+
+    res.end();
   }
 
   @Get('conversations/:id')

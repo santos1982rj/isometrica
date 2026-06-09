@@ -26,6 +26,13 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return res.json();
 }
 
+import type {
+  Curso, Modulo, Aula, Questao, PerfilGameficacao, Conversa, Mensagem, Usuario,
+  ProfessorAnalytics, AdminFinanceiro, UsuarioAdmin, Matricula,
+  Certificado, Plano, Assinatura, NextLessonsResponse, ProgressoCurso,
+  NotaResponse, Recomendacao, Enrollment,
+} from './types';
+
 export const api = {
   auth: {
     cadastro: (data: { email: string; senha: string; nome?: string }) =>
@@ -52,39 +59,118 @@ export const api = {
         body: JSON.stringify({ token, novaSenha }),
       }),
 
-    perfil: () => request<{ id: string; email: string; name: string; role: string }>('/auth/perfil'),
+    perfil: () => request<Usuario>('/auth/perfil'),
   },
 
   courses: {
-    listar: () => request<any[]>('/courses'),
+    listar: () => request<Curso[]>('/courses'),
+    detalhe: (id: string) => request<Curso>(`/courses/${id}`),
+    criar: (data: { name: string; description: string; category?: string; imageUrl?: string; color?: string; estimatedHours?: number; level?: string; premium?: boolean; certificateEnabled?: boolean; price?: number }) =>
+      request<Curso>('/courses', { method: 'POST', body: JSON.stringify(data) }),
+    atualizar: (id: string, data: { name?: string; description?: string; imageUrl?: string; category?: string }) =>
+      request<Curso>(`/courses/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    remover: (id: string) => request<{ message: string }>(`/courses/${id}`, { method: 'DELETE' }),
+    criarModulo: (courseId: string, data: { name: string; order: number }) =>
+      request<Modulo>(`/courses/${courseId}/modules`, { method: 'POST', body: JSON.stringify(data) }),
+    atualizarModulo: (id: string, data: { name?: string; order?: number }) =>
+      request<Modulo>(`/modules/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    removerModulo: (id: string) => request<{ message: string }>(`/modules/${id}`, { method: 'DELETE' }),
+    criarAula: (moduleId: string, data: { title: string; type: string; order: number; content?: string; videoUrl?: string; free?: boolean }) =>
+      request<Aula>(`/modules/${moduleId}/lessons`, { method: 'POST', body: JSON.stringify(data) }),
+    atualizarAula: (id: string, data: { title?: string; content?: string; videoUrl?: string }) =>
+      request<Aula>(`/lessons/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    removerAula: (id: string) => request<{ message: string }>(`/lessons/${id}`, { method: 'DELETE' }),
 
-    detalhe: (id: string) => request<any>(`/courses/${id}`),
+    comprar: (courseId: string) => request<{ purchase: any; enrolled: boolean }>(`/courses/${courseId}/purchase`, { method: 'POST' }),
+
+    verificarAcesso: (courseId: string) =>
+      request<{ hasAccess: boolean; needsPurchase: boolean; price: number; premium: boolean; certificateEnabled: boolean }>(`/courses/${courseId}/access`),
   },
 
   knowledge: {
-    subjects: () => request<any[]>('/knowledge/subjects'),
+    subjects: () => request<{ id: string; name: string; description?: string }[]>('/knowledge/subjects'),
+    listarTopicos: () => request<{ id: string; name: string; subjectId: string; subject?: { id: string; name: string } }[]>('/knowledge/topics'),
   },
 
   learning: {
-    modelo: (userId: string) => request<any[]>(`/learning/model/${userId}`),
-
+    modelo: (userId: string) => request<{ id: string; userId: string; topicId: string; proficiency: number; topic?: { id: string; name: string; subject?: { id: string; name: string } } }[]>(`/learning/model/${userId}`),
     diagnosticos: (userId: string) => request<any[]>(`/learning/diagnostics/${userId}`),
-
     criarDiagnostico: (userId: string) => request<any>(`/learning/diagnostics/${userId}`, { method: 'POST' }),
+    matricular: (userId: string, courseId: string) =>
+      request<Enrollment>('/learning/enroll', { method: 'POST', body: JSON.stringify({ userId, courseId }) }),
+    verificarMatricula: (userId: string, courseId: string) =>
+      request<Matricula>(`/learning/enrolled/${userId}/${courseId}`),
+    matriculas: (userId: string) => request<Enrollment[]>(`/learning/enrollments/${userId}`),
+    enviarTentativa: (data: { userId: string; questionId: string; selectedId: string; correct: boolean }) =>
+      request<{ id: string }>('/learning/attempts', { method: 'POST', body: JSON.stringify(data) }),
+    erros: (userId: string) => request<any[]>(`/learning/errors/${userId}`),
+    limparErros: (userId: string) => request<{ message: string }>(`/learning/errors/${userId}/clear`, { method: 'POST' }),
+    proximasAulas: (userId: string) => request<NextLessonsResponse>(`/learning/next-lessons/${userId}`),
+    planoSemanal: (userId: string) => request<any>(`/learning/week-plan/${userId}`),
+    salvarAnotacao: (userId: string, lessonId: string, notes: string) =>
+      request<NotaResponse>('/learning/notes', { method: 'POST', body: JSON.stringify({ userId, lessonId, notes }) }),
+    anotacao: (userId: string, lessonId: string) =>
+      request<NotaResponse>(`/learning/notes/${userId}/${lessonId}`),
+    marcarProgresso: (userId: string, lessonId: string, completed: boolean) =>
+      request<{ id: string; completed: boolean }>('/learning/progress', { method: 'POST', body: JSON.stringify({ userId, lessonId, completed }) }),
+    progressoCurso: (userId: string, courseId: string) =>
+      request<ProgressoCurso>(`/learning/progress/${userId}/${courseId}`),
+    gerarCertificado: (courseId: string) =>
+      request<Certificado>(`/learning/certificate/${courseId}`, { method: 'POST' }),
+    certificados: () => request<Certificado[]>(`/learning/certificates`),
+  },
+
+  conteudo: {
+    aula: (id: string) => request<Aula>(`/lessons/${id}`),
+    questoes: (id: string) => request<Questao[]>(`/lessons/${id}/questions`),
+    criarQuestao: (data: { text: string; topicId: string; difficulty: string; bloomLevel: string; explanation?: string; alternatives: { text: string; isCorrect: boolean }[] }) =>
+      request<Questao>('/questions', { method: 'POST', body: JSON.stringify(data) }),
+  },
+
+  financeiro: {
+    assinar: (userId: string, planId: string) =>
+      request<Assinatura>('/financial/subscriptions', { method: 'POST', body: JSON.stringify({ userId, planId }) }),
+    assinaturas: (userId: string) => request<Assinatura[]>(`/financial/subscriptions/${userId}`),
+    planos: () => request<Plano[]>('/financial/plans'),
+    adminOverview: () => request<AdminFinanceiro>('/financial/admin/overview'),
+  },
+
+  analytics: {
+    professor: () => request<ProfessorAnalytics>('/analytics/professor'),
+    cursoAlunos: (courseId: string) => request<any[]>(`/analytics/professor/courses/${courseId}/students`),
+  },
+
+  gamification: {
+    perfil: (userId: string) => request<PerfilGameficacao>(`/gamification/profile/${userId}`),
+    adicionarXp: (userId: string, amount: number) =>
+      request<PerfilGameficacao>(`/gamification/profile/${userId}/xp/${amount}`, { method: 'POST' }),
+    atualizarStreak: (userId: string) =>
+      request<PerfilGameficacao>(`/gamification/profile/${userId}/streak`, { method: 'POST' }),
+    leaderboard: (limit = 10) => request<any[]>(`/gamification/leaderboard?limit=${limit}`),
+  },
+
+  profile: {
+    me: () => request<any>('/profile'),
+
+    atualizar: (data: any) => request<any>('/profile', { method: 'PUT', body: JSON.stringify(data) }),
+
+    publico: (id: string) => request<any>(`/profile/public/${id}`),
+  },
+
+  admin: {
+    usuarios: () => request<UsuarioAdmin[]>('/usuarios'),
+    usuario: (id: string) => request<UsuarioAdmin>(`/usuarios/${id}`),
+    atualizarUsuario: (id: string, data: { name?: string; role?: string; university?: string; period?: number }) =>
+      request<UsuarioAdmin>(`/usuarios/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    removerUsuario: (id: string) => request<{ message: string }>(`/usuarios/${id}`, { method: 'DELETE' }),
   },
 
   ai: {
-    conversas: (userId: string) => request<any[]>(`/ai/conversations/user/${userId}`),
-
+    conversas: (userId: string) => request<Conversa[]>(`/ai/conversations/user/${userId}`),
     criarConversa: (userId: string, titulo?: string) =>
-      request<any>('/ai/conversations', { method: 'POST', body: JSON.stringify({ userId, title: titulo }) }),
-
+      request<Conversa>('/ai/conversations', { method: 'POST', body: JSON.stringify({ userId, title: titulo }) }),
     enviarMensagem: (conversaId: string, role: string, content: string) =>
-      request<any>(`/ai/conversations/${conversaId}/messages`, {
-        method: 'POST',
-        body: JSON.stringify({ role, content }),
-      }),
-
-    obterConversa: (id: string) => request<any>(`/ai/conversations/${id}`),
+      request<Mensagem>(`/ai/conversations/${conversaId}/messages`, { method: 'POST', body: JSON.stringify({ role, content }) }),
+    obterConversa: (id: string) => request<Conversa>(`/ai/conversations/${id}`),
   },
 };

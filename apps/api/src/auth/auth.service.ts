@@ -2,6 +2,7 @@ import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/co
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailService } from '../email/email.service';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
 
@@ -10,6 +11,7 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    private readonly emailService: EmailService,
   ) {}
 
   async cadastro(dto: SignupDto) {
@@ -30,6 +32,8 @@ export class AuthService {
         period: dto.periodo,
       },
     });
+
+    this.emailService.sendWelcome(dto.email, dto.nome ?? 'Estudante').catch(() => {});
 
     return this.gerarToken(usuario.id, usuario.email);
   }
@@ -71,7 +75,9 @@ export class AuthService {
       { expiresIn: '1h' },
     );
 
-    return { mensagem: 'Se o email existir, você receberá um link de recuperação.', reset_token: resetToken };
+    await this.emailService.sendPasswordReset(email, resetToken).catch(() => {});
+
+    return { mensagem: 'Se o email existir, você receberá um link de recuperação.' };
   }
 
   async recuperarSenha(token: string, novaSenha: string) {

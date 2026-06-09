@@ -65,6 +65,12 @@ model User {
   role          UserRole @default(STUDENT)
   university    String?
   period        Int?
+  title         String?
+  bio           String?
+  lattes        String?
+  linkedin      String?
+  instagram     String?
+  twitter       String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -79,6 +85,7 @@ model User {
   purchases         Purchase[]
   events            Event[]
   tutorActions      TutorAction[]
+  certificates      Certificate[]
 }
 
 model Subject {
@@ -93,17 +100,25 @@ model Subject {
 }
 
 model Course {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  imageUrl    String?
-  subjectId   String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                String   @id @default(cuid())
+  name              String
+  description       String?
+  imageUrl          String?
+  category          String?
+  color             String?
+  estimatedHours    Int      @default(0)
+  level             String   @default("iniciante")
+  price             Decimal  @default(0)
+  premium           Boolean  @default(false)
+  certificateEnabled Boolean @default(false)
+  subjectId         String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
-  subject     Subject     @relation(fields: [subjectId], references: [id])
+  subject     Subject?    @relation(fields: [subjectId], references: [id])
   modules     Module[]
   enrollments Enrollment[]
+  certificates Certificate[]
 }
 
 model Module {
@@ -126,6 +141,8 @@ model Lesson {
   content    String?
   type       String     @default("video")
   order      Int
+  free       Boolean    @default(false)
+  materials  Json?
   accessType AccessType @default(FREE)
   moduleId   String
   createdAt  DateTime   @default(now())
@@ -133,6 +150,7 @@ model Lesson {
 
   module          Module            @relation(fields: [moduleId], references: [id])
   lessonProgresses LessonProgress[]
+  questions       Question[]
 }
 
 model Topic {
@@ -155,10 +173,12 @@ model Question {
   bloomLevel  BloomLevel       @default(REMEMBER)
   explanation String?
   topicId     String
+  lessonId    String?
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
   topic           Topic              @relation(fields: [topicId], references: [id])
+  lesson          Lesson?            @relation(fields: [lessonId], references: [id])
   alternatives    Alternative[]
   questionAttempts QuestionAttempt[]
 }
@@ -193,6 +213,7 @@ model LessonProgress {
   lessonId  String
   completed Boolean  @default(false)
   progress  Float    @default(0)
+  notes     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -381,6 +402,21 @@ model Coupon {
   usedCount  Int      @default(0)
   createdAt  DateTime @default(now())
   purchases  Purchase[]
+}
+
+model Certificate {
+  id          String   @id @default(cuid())
+  userId      String
+  courseId    String
+  title       String
+  proficiency Float    @default(0)
+  totalHours  Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id])
+  course Course @relation(fields: [courseId], references: [id])
+
+  @@unique([userId, courseId])
 }
 
 model Purchase {

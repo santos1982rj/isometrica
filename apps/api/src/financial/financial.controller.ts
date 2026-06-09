@@ -1,5 +1,7 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { FinancialService } from './financial.service';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '../generated/prisma/enums';
 
 @Controller('financial')
 export class FinancialController {
@@ -18,5 +20,11 @@ export class FinancialController {
   @Get('subscriptions/:userId')
   getUserSubscriptions(@Param('userId') userId: string) {
     return this.financialService.getUserSubscriptions(userId);
+  }
+
+  @Get('admin/overview')
+  @Roles(UserRole.ADMIN)
+  getAdminOverview() {
+    return this.financialService.getAdminOverview();
   }
 }

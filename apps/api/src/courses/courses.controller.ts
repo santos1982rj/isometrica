@@ -1,5 +1,9 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, UnauthorizedException, ForbiddenException } from '@nestjs/common';
 import { CoursesService } from './courses.service';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '../generated/prisma/enums';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { Public } from '../auth/decorators/public.decorator';
 
 @Controller('courses')
 export class CoursesController {
@@ -13,5 +17,35 @@ export class CoursesController {
   @Get(':id')
   findById(@Param('id') id: string) {
     return this.coursesService.findById(id);
+  }
+
+  @Post()
+  @Roles(UserRole.PROFESSOR, UserRole.ADMIN)
+  create(@Body() body: { name: string; description: string; category?: string; imageUrl?: string; color?: string; estimatedHours?: number; level?: string; premium?: boolean; certificateEnabled?: boolean; price?: number }) {
+    return this.coursesService.create(body);
+  }
+
+  @Put(':id')
+  @Roles(UserRole.PROFESSOR, UserRole.ADMIN)
+  update(@Param('id') id: string, @Body() body: { name?: string; description?: string; imageUrl?: string; category?: string }) {
+    return this.coursesService.update(id, body);
+  }
+
+  @Delete(':id')
+  @Roles(UserRole.ADMIN)
+  remove(@Param('id') id: string) {
+    return this.coursesService.remove(id);
+  }
+
+  @Post(':id/purchase')
+  purchase(@Param('id') id: string, @CurrentUser('id') userId: string) {
+    if (!userId) throw new UnauthorizedException();
+    return this.coursesService.purchaseCourse(userId, id);
+  }
+
+  @Get(':id/access')
+  checkAccess(@Param('id') id: string, @CurrentUser('id') userId: string) {
+    if (!userId) return { hasAccess: false };
+    return this.coursesService.checkAccess(userId, id);
   }
 }

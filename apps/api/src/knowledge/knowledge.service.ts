@@ -9,6 +9,10 @@ export class KnowledgeService {
     return this.prisma.subject.findMany({ include: { topics: true } });
   }
 
+  findAllTopics() {
+    return this.prisma.topic.findMany({ include: { subject: true } });
+  }
+
   findSubjectById(id: string) {
     return this.prisma.subject.findUnique({
       where: { id },

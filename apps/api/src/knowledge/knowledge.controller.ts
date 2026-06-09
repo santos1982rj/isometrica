@@ -15,6 +15,11 @@ export class KnowledgeController {
     return this.knowledgeService.findSubjectById(id);
   }
 
+  @Get('topics')
+  findAllTopics() {
+    return this.knowledgeService.findAllTopics();
+  }
+
   @Get('topics/:topicId/questions')
   findQuestionsByTopic(@Param('topicId') topicId: string) {
     return this.knowledgeService.findQuestionsByTopic(topicId);

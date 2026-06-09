@@ -101,6 +101,7 @@ Plataforma inteligente de evolução acadêmica para estudantes de Engenharia, c
 - Bento grid (cards assimétricos)
 - shadcn/ui como base, customizado com tokens
 - Tipografia: Inter (corpo) + DM Sans (display)
+- **NUNCA usar emojis na interface** — substituir por ícones de biblioteca (lucide-react, Phosphor, Tabler, etc.)
 
 ### Protótipo Criado
 - Local: `C:\dev\prototipo-isometrica\dashboard.html`
@@ -110,16 +111,45 @@ Plataforma inteligente de evolução acadêmica para estudantes de Engenharia, c
 
 - **skill-creator** — em `~/.config/opencode/skills/skill-creator/`, para criar/editar skills
 
-## Próximos Passos (prioridade)
+## Status Atual — 24 Rotas (Junho 2026)
 
-1. **Backend primeiro** — começar pelo NestJS, estrutura de módulos, Prisma schema
-2. **Definir bounded contexts** — separar domínios por módulo
-3. **Implementar Event Bus** — base da arquitetura
-4. **Modelo do Aluno (StudentModel)** — como calcular proficiência
-5. **Frontend** — Next.js + shadcn + design system
-6. **Financeiro** — planos, assinaturas, pagamentos
-7. **Gamificação** — XP, streaks, conquistas
-8. **Deploy**
+### 🎓 ESTUDANTE
+| Página | O que faz | Status |
+|--------|-----------|--------|
+| `/dashboard` | KPIs, continuar estudos, proficiência, atividade, heatmap | ✅ |
+| `/cursos` | Catálogo com cards + gradiente dinâmico | ✅ |
+| `/cursos/[id]` | Landing page com hero dinâmico, badges, ementa, professor, matrícula/compra | ✅ |
+| `/aulas/[id]` | Player vídeo embed, quiz, anotações (auto-save), materiais, professor, degustação | ✅ |
+| `/gamificacao` | XP, level, streak, conquistas, ranking | ✅ |
+| `/tutor` | Chat com Tutor IA (OpenAI streaming) | ✅ |
+| `/progresso` | Proficiência por tópico, donut, diagnósticos | ✅ |
+| `/certificados` | Certificados emitidos (só cursos com certificateEnabled) | ✅ |
+| `/assinatura` | Planos Gratuito vs Premium com assinatura | ✅ |
+| `/erros` | Feed de Erros com refazer questões | ✅ |
+| `/perfil` | Perfil com XP, streak, certificados, cursos em andamento | ✅ |
+| `/perfil/editar` | Editar perfil (nome, bio, universidade, período) | ✅ |
+
+### 👨‍🏫 PROFESSOR
+| Página | O que faz | Status |
+|--------|-----------|--------|
+| `/professor/dashboard` | Overview com analytics reais (cursos, alunos, acertos) | ✅ |
+| `/professor/cursos` | Lista de cursos com gerenciar/excluir | ✅ |
+| `/professor/cursos/novo` | **Wizard completo**: curso → módulos → aulas → config | ✅ |
+| `/professor/cursos/[id]` | Gerenciar módulos/aulas/questões (CRUD inline) | ✅ |
+
+### 🔧 ADMIN
+| Página | O que faz | Status |
+|--------|-----------|--------|
+| `/admin/dashboard` | Overview: plataforma (usuários, receita, cursos ativos) | ✅ |
+| `/admin/usuarios` | Gestão de usuários (listar, buscar, mudar papel, remover) | ✅ |
+| `/admin/financeiro` | MRR, assinaturas ativas, churn, pagamentos recentes | ✅ |
+
+### 🌐 Páginas Públicas
+| Página | O que faz | Status |
+|--------|-----------|--------|
+| `/` | Landing page (hero, features, planos, contato) | ✅ |
+| `/u/[id]` | Perfil público compartilhável (certificados, gamificação) | ✅ |
+| `/404` | Página não encontrada customizada | ✅ |
 
 ## Lições do Projeto Anterior
 

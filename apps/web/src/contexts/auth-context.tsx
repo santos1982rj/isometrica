@@ -3,13 +3,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
-
-interface Usuario {
-  id: string;
-  email: string;
-  name: string | null;
-  role: string;
-}
+import type { Usuario } from '@/lib/types';
 
 interface AuthContextType {
   usuario: Usuario | null;
@@ -40,13 +34,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  function rotaInicial(role: string) {
+    switch (role) {
+      case 'PROFESSOR': return '/professor/dashboard';
+      case 'ADMIN': return '/admin/dashboard';
+      default: return '/dashboard';
+    }
+  }
+
   const login = useCallback(async (email: string, senha: string) => {
     const res = await api.auth.login({ email, senha });
     localStorage.setItem('token', res.access_token);
     setToken(res.access_token);
     const perfil = await api.auth.perfil();
     setUsuario(perfil);
-    router.push('/dashboard');
+    router.push(rotaInicial(perfil.role));
   }, [router]);
 
   const cadastro = useCallback(async (email: string, senha: string, nome?: string) => {
@@ -55,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(res.access_token);
     const perfil = await api.auth.perfil();
     setUsuario(perfil);
-    router.push('/dashboard');
+    router.push(rotaInicial(perfil.role));
   }, [router]);
 
   const logout = useCallback(() => {

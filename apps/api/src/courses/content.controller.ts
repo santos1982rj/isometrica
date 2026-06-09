@@ -1,0 +1,70 @@
+import { Controller, Get, Post, Put, Delete, Param, Body } from '@nestjs/common';
+import { ContentService } from './content.service';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '../generated/prisma/enums';
+
+@Controller()
+export class ContentController {
+  constructor(private readonly contentService: ContentService) {}
+
+  @Get('lessons/:id')
+  findLesson(@Param('id') id: string) {
+    return this.contentService.findLesson(id);
+  }
+
+  @Get('lessons/:id/questions')
+  findLessonQuestions(@Param('id') id: string) {
+    return this.contentService.findLessonQuestions(id);
+  }
+
+  @Post('questions')
+  @Roles(UserRole.PROFESSOR, UserRole.ADMIN)
+  createQuestion(@Body() body: {
+    text: string
+    topicId: string
+    difficulty: string
+    bloomLevel: string
+    explanation?: string
+    alternatives: { text: string; isCorrect: boolean }[]
+  }) {
+    return this.contentService.createQuestion(body);
+  }
+
+  // Modules
+  @Post('courses/:courseId/modules')
+  @Roles(UserRole.PROFESSOR, UserRole.ADMIN)
+  createModule(@Param('courseId') courseId: string, @Body() body: { name: string; order: number }) {
+    return this.contentService.createModule(courseId, body);
+  }
+
+  @Put('modules/:id')
+  @Roles(UserRole.PROFESSOR, UserRole.ADMIN)
+  updateModule(@Param('id') id: string, @Body() body: { name?: string; order?: number }) {
+    return this.contentService.updateModule(id, body);
+  }
+
+  @Delete('modules/:id')
+  @Roles(UserRole.ADMIN)
+  removeModule(@Param('id') id: string) {
+    return this.contentService.removeModule(id);
+  }
+
+  // Lessons
+  @Post('modules/:moduleId/lessons')
+  @Roles(UserRole.PROFESSOR, UserRole.ADMIN)
+  createLesson(@Param('moduleId') moduleId: string, @Body() body: { title: string; type: string; order: number; content?: string; videoUrl?: string; free?: boolean }) {
+    return this.contentService.createLesson(moduleId, body);
+  }
+
+  @Put('lessons/:id')
+  @Roles(UserRole.PROFESSOR, UserRole.ADMIN)
+  updateLesson(@Param('id') id: string, @Body() body: { title?: string; content?: string; videoUrl?: string }) {
+    return this.contentService.updateLesson(id, body);
+  }
+
+  @Delete('lessons/:id')
+  @Roles(UserRole.ADMIN)
+  removeLesson(@Param('id') id: string) {
+    return this.contentService.removeLesson(id);
+  }
+}
