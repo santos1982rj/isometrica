@@ -177,7 +177,7 @@ export default function DashboardPage() {
               ))
             ) : nextLessons.length === 0 ? (
               <p className="col-span-2 py-8 text-center text-sm text-muted-foreground">
-                Todos os cursos concluídos! 🎉
+                <span className="inline-flex items-center gap-1">Todos os cursos concluídos! <Sparkles className="size-3 text-isometrica-accent" /></span>
               </p>
             ) : (
               nextLessons.map((item) => (

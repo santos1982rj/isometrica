@@ -11,7 +11,8 @@ export class GamificationEventHandler {
     private readonly eventBus: EventBusService,
     private readonly gamification: GamificationService,
   ) {
-    this.eventBus.registerHandler(EventType.QUESTION_ANSWERED, (event) => this.onQuestionAnswered(event));
+    this.eventBus.registerHandler(EventType.QUESTION_CORRECT, (event) => this.onQuestionAnswered(event));
+    this.eventBus.registerHandler(EventType.QUESTION_INCORRECT, (event) => this.onQuestionAnswered(event));
     this.eventBus.registerHandler(EventType.LESSON_COMPLETED, (event) => this.onLessonCompleted(event));
     this.eventBus.registerHandler(EventType.STREAK_UPDATED, (event) => this.checkStreakAchievements(event));
   }
@@ -21,6 +22,8 @@ export class GamificationEventHandler {
     if (correct) {
       await this.gamification.addXp(event.userId, 10);
       this.logger.debug(`+10 XP for correct answer (user: ${event.userId})`);
+    } else {
+      this.logger.debug(`Incorrect answer recorded (user: ${event.userId})`);
     }
   }
 

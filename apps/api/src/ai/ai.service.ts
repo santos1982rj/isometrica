@@ -4,21 +4,43 @@ import { PrismaService } from '../prisma/prisma.service';
 import OpenAI from 'openai';
 import { Response } from 'express';
 
+const SYSTEM_PROMPT = `Você é o Tutor IA da Isométrica, uma plataforma de ensino de Engenharia.
+
+## TAREFAS PERMITIDAS
+- Explicar conceitos de engenharia (civil, mecânica, elétrica, computação, etc.)
+- Resolver exercícios técnicos passo a passo
+- Sugerir materiais de estudo, livros, videoaulas
+- Recomendar tópicos para revisar com base em dificuldades
+- Responder perguntas sobre cálculo, física, resistência dos materiais, estruturas, hidráulica, solos, etc.
+
+## REGRAS
+- Responda APENAS sobre Engenharia, Matemática, Física e ciências exatas aplicadas.
+- Se o usuário perguntar algo FORA desses tópicos (receitas, entretenimento, política, programação, opinião), recuse educadamente e redirecione para engenharia.
+- NÃO gere receitas, NÃO escreva código, NÃO dê opiniões pessoais.
+- NÃO finja ser humano. Diga sempre "Tutor IA" quando referir a si mesmo.
+- Seja didático: use exemplos práticos do dia a dia da engenharia.
+- Máximo de 400 palavras por resposta.
+- Use português claro e acessível. Evite jargão desnecessário.
+- Se o aluno estiver errado, corrija com gentileza.`;
+
+const GROQ_BASE_URL = 'https://api.groq.com/openai/v1';
+const GROQ_MODEL = 'llama-3.3-70b-versatile';
+
 @Injectable()
 export class AiService {
   private readonly logger = new Logger(AiService.name);
-  private openai: OpenAI | null = null;
+  private client: OpenAI | null = null;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
   ) {
-    const apiKey = this.configService.get<string>('OPENAI_API_KEY');
+    const apiKey = this.configService.get<string>('GROQ_API_KEY');
     if (apiKey) {
-      this.openai = new OpenAI({ apiKey });
-      this.logger.log('OpenAI client initialized');
+      this.client = new OpenAI({ apiKey, baseURL: GROQ_BASE_URL });
+      this.logger.log(`Groq client initialized (model: ${GROQ_MODEL})`);
     } else {
-      this.logger.warn('OPENAI_API_KEY not configured — using fallback responses');
+      this.logger.warn('GROQ_API_KEY not configured — using fallback responses');
     }
   }
 
@@ -27,48 +49,14 @@ export class AiService {
   }
 
   async addMessage(data: { conversationId: string; role: string; content: string }) {
-    const msg = await this.prisma.message.create({ data });
-
-    if (data.role === 'user' && this.openai) {
-      const history = await this.prisma.message.findMany({
-        where: { conversationId: data.conversationId },
-        orderBy: { createdAt: 'asc' },
-        take: 20,
-      });
-
-      try {
-        const completion = await this.openai.chat.completions.create({
-          model: 'gpt-4o-mini',
-          messages: [
-            {
-              role: 'system',
-              content: 'Você é o Tutor IA da Isométrica, uma plataforma de engenharia. Responda em português claro e didático. Explique conceitos com exemplos práticos. Seja paciente e encorajador. Use linguagem técnica mas acessível. Quando apropriado, sugira exercícios ou materiais. Máximo 400 palavras.',
-            },
-            ...history.map((m) => ({
-              role: (m.role === 'user' ? 'user' : 'assistant') as 'user' | 'assistant',
-              content: m.content,
-            })),
-          ],
-          max_tokens: 600,
-        });
-
-        const reply = completion.choices[0]?.message?.content ?? 'Desculpe, não consegui processar sua pergunta. Tente novamente.';
-        return this.prisma.message.create({
-          data: { conversationId: data.conversationId, role: 'assistant', content: reply },
-        });
-      } catch (err) {
-        this.logger.error('OpenAI API error', err);
-        return this.fallbackResponse(data.conversationId);
-      }
-    }
-
-    return msg;
+    return this.prisma.message.create({ data });
   }
 
   async streamReply(conversationId: string, res: Response): Promise<string | null> {
-    if (!this.openai) {
+    if (!this.client) {
       const fallback = 'Desculpe, estou com dificuldades técnicas no momento. Por favor, tente novamente mais tarde.';
       res.write(`data: ${JSON.stringify({ token: fallback })}\n\n`);
+      res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
       return fallback;
     }
 
@@ -78,14 +66,18 @@ export class AiService {
       take: 20,
     });
 
+    if (history.length === 0) {
+      const fallback = 'Nenhuma mensagem encontrada.';
+      res.write(`data: ${JSON.stringify({ token: fallback })}\n\n`);
+      res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+      return fallback;
+    }
+
     try {
-      const stream = await this.openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+      const stream = await this.client.chat.completions.create({
+        model: GROQ_MODEL,
         messages: [
-          {
-            role: 'system',
-            content: 'Você é o Tutor IA da Isométrica, uma plataforma de engenharia. Responda em português claro e didático. Explique conceitos com exemplos práticos. Seja paciente e encorajador. Use linguagem técnica mas acessível. Máximo 400 palavras.',
-          },
+          { role: 'system', content: SYSTEM_PROMPT },
           ...history.map((m) => ({
             role: (m.role === 'user' ? 'user' : 'assistant') as 'user' | 'assistant',
             content: m.content,
@@ -106,24 +98,14 @@ export class AiService {
       }
 
       res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
-      return fullReply;
+      return fullReply || null;
     } catch (err) {
-      this.logger.error('OpenAI streaming error', err);
+      this.logger.error('Groq streaming error', err);
       const fallback = 'Desculpe, ocorreu um erro ao processar sua pergunta. Tente novamente.';
       res.write(`data: ${JSON.stringify({ token: fallback })}\n\n`);
       res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
       return fallback;
     }
-  }
-
-  private async fallbackResponse(conversationId: string) {
-    return this.prisma.message.create({
-      data: {
-        conversationId,
-        role: 'assistant',
-        content: 'Desculpe, estou com dificuldades técnicas no momento. Por favor, tente novamente mais tarde. Se o problema persistir, entre em contato com o suporte.',
-      },
-    });
   }
 
   getConversation(id: string) {

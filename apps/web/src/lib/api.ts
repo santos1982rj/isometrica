@@ -48,7 +48,7 @@ export const api = {
       }),
 
     esqueceuSenha: (email: string) =>
-      request<{ mensagem: string; reset_token?: string }>('/auth/esqueceu-senha', {
+      request<{ mensagem: string }>('/auth/esqueceu-senha', {
         method: 'POST',
         body: JSON.stringify({ email }),
       }),

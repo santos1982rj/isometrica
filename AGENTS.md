@@ -111,7 +111,46 @@ Plataforma inteligente de evolução acadêmica para estudantes de Engenharia, c
 
 - **skill-creator** — em `~/.config/opencode/skills/skill-creator/`, para criar/editar skills
 
-## Status Atual — 25 Rotas (Junho 2026)
+## Mudanças Realizadas (Sessão 09/06/2026)
+
+### Fase 0 — Hotfixes (4 bugs críticos corrigidos)
+1. **Gamificação nunca funcionou**: handler em `gamification.handler.ts` escutava `QUESTION_ANSWERED`, mas o `LearningService` nunca emitia esse evento — emitia `QUESTION_CORRECT`/`QUESTION_INCORRECT`. Handler migrado.
+2. **esqueceuSenha type errado**: `api.ts` declarava `reset_token?` na resposta — API não retorna mais token. Tipo simplificado.
+3. **Cursos sem `@Public()`**: `CoursesController`, `ContentController`, `KnowledgeController` sem decorator — retornavam 401. Adicionado `@Public()` nos endpoints GET e search.
+4. **Scrollbar quebrada**: `hsl(var(--border))` inválido em `globals.css` — corrigido para `var(--border)`.
+
+### Fase 1 — Fundação (Packages Compartilhados)
+- **`@isometrica/contracts`**: 20+ tipos compartilhados (Usuario, Curso, Questao, etc.)
+- **`@isometrica/domain`**: Zod schemas (SignupSchema, LoginSchema, SubmitAttemptSchema, etc.)
+- **`@isometrica/ui`**: `cn()` utility, constantes de cores e breakpoints
+- **`@isometrica/config`**: Constantes de app, rotas de API, paginação
+- Frontend `types.ts` agora re-exporta de `@isometrica/contracts`
+- Frontend `utils.ts` agora re-exporta de `@isometrica/ui`
+- APIs e Web dependem dos 4 packages como `workspace:*`
+
+### Fase 2 — Design Refinamento
+1. **`tokens.css`**: Tokens separados do globals.css — tema inline, :root, .dark, tipografia
+2. **26 emojis substituídos** em 5 arquivos (`gamificacao`, `banco-questoes`, `cursos/[id]`, `dashboard`, `erros`) por lucide-react
+
+### Fase 3 — Refatoração Backend
+1. **Global Exception Filter**: `AllExceptionsFilter` — padroniza erros com `{ statusCode, message, timestamp }`
+2. **DTOs com class-validator**: Criados para Courses (create/update/module/lesson), Learning (enroll/progress/attempt), Knowledge (subject/topic), Questions (create), Profile (update)
+3. **N+1 fixes**: `learning.service.ts` (`getNextLessons` — batching), `analytics.service.ts` (`getProfessorAnalytics` + `getCourseStudents` — batch + groupBy)
+
+### Fase 4 — Frontend
+- **TanStack React Query**: Instalado, `QueryProvider` criado, configurado no layout raiz
+
+### Fase 5 — Testes
+- **API**: 16 testes passando (2 spec files)
+- **Frontend**: Vitest + Testing Library configurados, 3 testes do Button passando
+- **Cobertura total**: `pnpm test` no root executa ambos os apps
+
+### Fase 6 — Novas Features
+1. **Compartilhar Certificado no LinkedIn**: Botão em `/certificados` com `Share2` → LinkedIn share intent
+2. **Ritual de Streak (Narrativa)**: Card no `/gamificacao` com mensagens progressivas (0 → 60+ dias)
+3. **Modo Concurso**: Página `/concurso` com lista de simulados mock + KPIs; sidebar atualizada
+
+## Status Atual — 26 Rotas (Junho 2026)
 
 ### 🎓 ESTUDANTE
 | Página | O que faz | Status |
@@ -129,6 +168,7 @@ Plataforma inteligente de evolução acadêmica para estudantes de Engenharia, c
 | `/perfil` | Perfil com XP, streak, certificados, cursos em andamento | ✅ |
 | `/perfil/editar` | Editar perfil (nome, bio, universidade, período) | ✅ |
 | `/banco-questoes` | Banco de Questões com árvore, filtros, estatísticas, modo domínio | ✅ |
+| `/concurso` | Modo Concurso/Vestibular com simulados cronometrados | ✅ |
 
 ### 👨‍🏫 PROFESSOR
 | Página | O que faz | Status |

@@ -47,6 +47,7 @@ import {
   FilePlus,
   PenSquare,
   AlertTriangle,
+  Timer,
 } from 'lucide-react'
 
 const menuEstudante = [
@@ -58,6 +59,7 @@ const menuEstudante = [
   { rotulo: 'Tutor IA', href: '/tutor', icone: Bot },
   { rotulo: 'Progresso', href: '/progresso', icone: TrendingUp },
   { rotulo: 'Feed de Erros', href: '/erros', icone: AlertTriangle },
+  { rotulo: 'Modo Concurso', href: '/concurso', icone: Timer },
 ]
 
 const menuEstudanteExtra = [

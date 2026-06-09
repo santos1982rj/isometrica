@@ -13,17 +13,21 @@ import {
   Zap,
   Medal,
   Crown,
-  Rocket,
   BookOpen,
   Brain,
   CheckCircle,
   Clock,
   Gift,
   Sparkles,
-  ChevronRight,
   TrendingUp,
-  Users,
-  ArrowUp,
+  PersonStanding,
+  Moon,
+  Ruler,
+  Lightbulb,
+  Building,
+  TriangleAlert,
+  RefreshCw,
+  Quote,
 } from 'lucide-react'
 
 const container = {
@@ -37,25 +41,25 @@ const itemAnim = {
 }
 
 const achievementsList = [
-  { name: 'Primeiro Passo', desc: 'Complete sua primeira aula', icon: '🎯', unlocked: true },
-  { name: 'Três dias seguidos', desc: 'Estude por 3 dias consecutivos', icon: '🔥', unlocked: true },
-  { name: 'Maratonista', desc: '7 dias consecutivos de estudo', icon: '🏃', unlocked: true },
-  { name: 'Mestre das Questões', desc: 'Responda 100 questões', icon: '📚', unlocked: false, progress: 67, target: 100 },
-  { name: 'Lenda', desc: '30 dias consecutivos', icon: '👑', unlocked: false, progress: 7, target: 30 },
-  { name: 'Colecionador', desc: 'Desbloqueie 10 conquistas', icon: '🏆', unlocked: false, progress: 3, target: 10 },
-  { name: 'Calculista', desc: '100% em Cálculo III', icon: '📐', unlocked: false, progress: 82, target: 100 },
-  { name: 'Engenheiro Noturno', desc: 'Estude após as 22h por 5 dias', icon: '🌙', unlocked: false, progress: 2, target: 5 },
-  { name: 'Velocista', desc: 'Responda 10 questões em 5 minutos', icon: '⚡', unlocked: false, progress: 6, target: 10 },
-  { name: 'Mentor', desc: 'Ajude 3 colegas no tutor IA', icon: '💡', unlocked: false, progress: 1, target: 3 },
-  { name: 'Dedicação Total', desc: 'Complete 50 aulas', icon: '📖', unlocked: false, progress: 18, target: 50 },
-  { name: 'Construtor', desc: 'Finalize um curso completo', icon: '🏗️', unlocked: false, progress: 1, target: 4 },
+  { name: 'Primeiro Passo', desc: 'Complete sua primeira aula', icon: Target, unlocked: true },
+  { name: 'Três dias seguidos', desc: 'Estude por 3 dias consecutivos', icon: Flame, unlocked: true },
+  { name: 'Maratonista', desc: '7 dias consecutivos de estudo', icon: PersonStanding, unlocked: true },
+  { name: 'Mestre das Questões', desc: 'Responda 100 questões', icon: BookOpen, unlocked: false, progress: 67, target: 100 },
+  { name: 'Lenda', desc: '30 dias consecutivos', icon: Crown, unlocked: false, progress: 7, target: 30 },
+  { name: 'Colecionador', desc: 'Desbloqueie 10 conquistas', icon: Trophy, unlocked: false, progress: 3, target: 10 },
+  { name: 'Calculista', desc: '100% em Cálculo III', icon: Ruler, unlocked: false, progress: 82, target: 100 },
+  { name: 'Engenheiro Noturno', desc: 'Estude após as 22h por 5 dias', icon: Moon, unlocked: false, progress: 2, target: 5 },
+  { name: 'Velocista', desc: 'Responda 10 questões em 5 minutos', icon: Zap, unlocked: false, progress: 6, target: 10 },
+  { name: 'Mentor', desc: 'Ajude 3 colegas no tutor IA', icon: Lightbulb, unlocked: false, progress: 1, target: 3 },
+  { name: 'Dedicação Total', desc: 'Complete 50 aulas', icon: BookOpen, unlocked: false, progress: 18, target: 50 },
+  { name: 'Construtor', desc: 'Finalize um curso completo', icon: Building, unlocked: false, progress: 1, target: 4 },
 ]
 
 const mockMissions = [
-  { name: 'Canteiro de Obras', desc: 'Responda 10 questões de Resistência dos Materiais', icon: '🚧', progress: 8, target: 10, xpReward: 200 },
-  { name: 'Mestre das Fórmulas', desc: 'Complete 4 aulas de Cálculo III', icon: '📏', progress: 3, target: 4, xpReward: 150 },
-  { name: 'Desafio Diário', desc: 'Estude por 30 minutos hoje', icon: '⏰', progress: 22, target: 30, xpReward: 50 },
-  { name: 'Revisão Geral', desc: 'Acerte 5 questões seguidas de Concreto Armado', icon: '🔄', progress: 3, target: 5, xpReward: 100 },
+  { name: 'Canteiro de Obras', desc: 'Responda 10 questões de Resistência dos Materiais', icon: TriangleAlert, progress: 8, target: 10, xpReward: 200 },
+  { name: 'Mestre das Fórmulas', desc: 'Complete 4 aulas de Cálculo III', icon: Ruler, progress: 3, target: 4, xpReward: 150 },
+  { name: 'Desafio Diário', desc: 'Estude por 30 minutos hoje', icon: Clock, progress: 22, target: 30, xpReward: 50 },
+  { name: 'Revisão Geral', desc: 'Acerte 5 questões seguidas de Concreto Armado', icon: RefreshCw, progress: 3, target: 5, xpReward: 100 },
 ]
 
 const xpHistory = [
@@ -88,6 +92,18 @@ export default function GamificacaoPage() {
   const streak = profile?.streak ?? 7
   const achievements = profile?.achievements ?? achievementsList.filter(a => a.unlocked)
   const missions = profile?.missions ?? mockMissions
+
+  function getStreakNarrative(days: number) {
+    if (days === 0) return { title: 'Hora de começar!', desc: 'Cada grande engenheiro começou com um primeiro passo. Que tal estudar hoje?', color: 'from-slate-400 to-slate-300' }
+    if (days < 3) return { title: 'Primeiros passos', desc: 'A consistência é o alicerce de toda obra. Mantenha o ritmo!', color: 'from-isometrica-info to-blue-400' }
+    if (days < 7) return { title: 'Ritmo de obra', desc: 'Três dias seguidos mostram disciplina de engenheiro. A fundação está firme.', color: 'from-isometrica-success to-emerald-400' }
+    if (days < 14) return { title: 'Concreto curado', desc: 'Uma semana! Seu hábito já está mais resistente que concreto armado.', color: 'from-isometrica-accent to-orange-400' }
+    if (days < 30) return { title: 'Estrutura metálica', desc: 'Duas semanas de consistência. Você já é referência de determinação.', color: 'from-purple-500 to-pink-500' }
+    if (days < 60) return { title: 'Arranha-céu', desc: '30 dias! Você não está apenas estudando — está construindo um legado.', color: 'from-yellow-500 to-amber-400' }
+    return { title: 'Monumento', desc: 'Mais de 60 dias de streak. Você é uma verdadeira obra-prima da engenharia.', color: 'from-isometrica-accent via-purple-500 to-pink-500' }
+  }
+
+  const narrative = getStreakNarrative(streak)
 
   const nextLevelXp = 100 * level * (level + 1) / 2
   const currentLevelXp = 100 * (level - 1) * level / 2
@@ -139,7 +155,7 @@ export default function GamificacaoPage() {
               </div>
               <p className="font-display text-2xl font-bold tabular-nums">{streak}</p>
               <p className="text-[10px] font-medium text-muted-foreground">Streak atual</p>
-              <p className="mt-1 text-[10px] text-isometrica-accent">🔥 Melhor: 12 dias</p>
+              <p className="mt-1 inline-flex items-center gap-1 text-[10px] text-isometrica-accent"><Flame className="size-3" /> Melhor: 12 dias</p>
             </div>
             <div className="bento-card flex flex-col items-center justify-center rounded-xl border border-border bg-card p-5 text-center">
               <div className="mb-2 flex size-11 items-center justify-center rounded-xl bg-isometrica-success/10">
@@ -160,6 +176,19 @@ export default function GamificacaoPage() {
           </div>
         </motion.div>
       </div>
+
+      <motion.div variants={itemAnim} className={`bento-card relative overflow-hidden rounded-xl border border-border bg-card p-5`}>
+        <div className={`absolute inset-0 bg-gradient-to-br ${narrative.color} opacity-[0.03]`} />
+        <div className="relative z-10 flex items-start gap-4">
+          <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-isometrica-accent/10">
+            <Quote className="size-6 text-isometrica-accent" />
+          </div>
+          <div>
+            <h3 className="font-display text-lg font-bold">{narrative.title}</h3>
+            <p className="mt-0.5 text-sm text-muted-foreground leading-relaxed">{narrative.desc}</p>
+          </div>
+        </div>
+      </motion.div>
 
       <div className="grid gap-5 lg:grid-cols-3">
         <motion.div variants={itemAnim} className="bento-card rounded-xl border border-border bg-card p-5 lg:col-span-2">
@@ -184,7 +213,7 @@ export default function GamificacaoPage() {
                       : 'border-border bg-muted/30 opacity-50'
                   }`}
                 >
-                  <span className="mb-1.5 text-2xl">{ach.icon}</span>
+                  <ach.icon className="mb-1.5 size-6" />
                   <p className={`text-xs font-semibold leading-tight ${isUnlocked ? '' : 'text-muted-foreground'}`}>
                     {ach.name}
                   </p>
@@ -230,8 +259,8 @@ export default function GamificacaoPage() {
                 className={`py-4 ${i < mockMissions.length - 1 ? 'border-b border-border' : ''}`}
               >
                 <div className="flex items-start gap-3">
-                  <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-base">
-                    {mission.icon}
+                  <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+                    <mission.icon className="size-4 text-muted-foreground" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold leading-tight">{mission.name}</p>
@@ -304,11 +333,11 @@ export default function GamificacaoPage() {
           </div>
           <div className="flex flex-col gap-3">
             {[
-              { pos: 1, name: 'Ana Oliveira', xp: 8450, level: 15, medal: '🥇' },
-              { pos: 2, name: 'Carlos Mendes', xp: 6720, level: 13, medal: '🥈' },
-              { pos: 3, name: 'Você', xp: 2450, level: 8, medal: '🥉', isMe: true },
-              { pos: 4, name: 'Lucas Silva', xp: 2100, level: 7, medal: '' },
-              { pos: 5, name: 'Maria Costa', xp: 1890, level: 6, medal: '' },
+              { pos: 1, name: 'Ana Oliveira', xp: 8450, level: 15 },
+              { pos: 2, name: 'Carlos Mendes', xp: 6720, level: 13 },
+              { pos: 3, name: 'Você', xp: 2450, level: 8, isMe: true },
+              { pos: 4, name: 'Lucas Silva', xp: 2100, level: 7 },
+              { pos: 5, name: 'Maria Costa', xp: 1890, level: 6 },
             ].map((user) => (
               <div
                 key={user.pos}
@@ -316,8 +345,11 @@ export default function GamificacaoPage() {
                   user.isMe ? 'bg-isometrica-accent/5 ring-1 ring-isometrica-accent/20' : 'hover:bg-muted'
                 }`}
               >
-                <span className="flex w-5 justify-center text-sm font-bold text-muted-foreground">
-                  {user.medal || user.pos}
+                <span className="flex w-5 justify-center">
+                  {user.pos === 1 ? <Medal className="size-5 text-yellow-500" /> :
+                   user.pos === 2 ? <Medal className="size-5 text-slate-400" /> :
+                   user.pos === 3 ? <Medal className="size-5 text-amber-700" /> :
+                   <span className="text-sm font-bold text-muted-foreground">{user.pos}</span>}
                 </span>
                 <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-isometrica-accent to-orange-400 text-xs font-bold text-white">
                   {user.name[0]}

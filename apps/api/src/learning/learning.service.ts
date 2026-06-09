@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventBusService } from '../event-bus/event-bus.service';
 import { EventType } from '../event-bus/interfaces/event.interface';
@@ -84,12 +84,12 @@ export class LearningService {
     });
     if (!course) throw new NotFoundException('Curso não encontrado');
     if (!course.certificateEnabled) {
-      throw new Error('Este curso não oferece certificado');
+      throw new BadRequestException('Este curso não oferece certificado');
     }
 
     const progress = await this.getCourseProgress(userId, courseId);
     if (progress.percentage < 100) {
-      throw new Error('Complete todas as aulas para obter o certificado');
+      throw new BadRequestException('Complete todas as aulas para obter o certificado');
     }
 
     const attempts = await this.prisma.questionAttempt.findMany({
@@ -139,17 +139,23 @@ export class LearningService {
       },
     });
 
+    const allLessonIds = enrollments.flatMap((e) =>
+      e.course.modules.flatMap((m) => m.lessons.map((l) => l.id)),
+    );
+    const completedProgress = await this.prisma.lessonProgress.findMany({
+      where: { userId, lessonId: { in: allLessonIds }, completed: true },
+      select: { lessonId: true },
+    });
+    const completedIds = new Set(completedProgress.map((p) => p.lessonId));
+
     const result = []
     for (const enrollment of enrollments) {
       const allLessons = enrollment.course.modules.flatMap((m) => m.lessons);
-      const completed = await this.prisma.lessonProgress.findMany({
-        where: { userId, lessonId: { in: allLessons.map((l) => l.id) }, completed: true },
-      });
-      const completedIds = new Set(completed.map((p) => p.lessonId));
+      const courseCompletedCount = allLessons.filter((l) => completedIds.has(l.id)).length;
       const nextLesson = allLessons.find((l) => !completedIds.has(l.id));
 
       if (nextLesson) {
-        const pct = allLessons.length > 0 ? Math.round((completedIds.size / allLessons.length) * 100) : 0;
+        const pct = allLessons.length > 0 ? Math.round((courseCompletedCount / allLessons.length) * 100) : 0;
         result.push({
           courseId: enrollment.course.id,
           courseName: enrollment.course.name,
@@ -158,7 +164,7 @@ export class LearningService {
           type: nextLesson.type,
           progress: pct,
           totalLessons: allLessons.length,
-          completedLessons: completedIds.size,
+          completedLessons: courseCompletedCount,
         });
       }
     }

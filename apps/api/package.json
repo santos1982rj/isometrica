@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "nest start --watch",
-    "build": "prisma generate && nest build",
+    "build": "prisma generate && nest build --tsc --tsConfigPath tsconfig.build.json",
     "start": "node dist/main",
     "start:prod": "node dist/main",
     "seed": "tsx prisma/seed.ts",
@@ -13,6 +13,9 @@
     "lint": "eslint \"{src,test}/**/*.ts\""
   },
   "dependencies": {
+    "@isometrica/contracts": "workspace:*",
+    "@isometrica/domain": "workspace:*",
+    "@isometrica/config": "workspace:*",
     "@neondatabase/serverless": "^1.1.0",
     "@nestjs/common": "^11.1.24",
     "@nestjs/config": "^4.0.0",

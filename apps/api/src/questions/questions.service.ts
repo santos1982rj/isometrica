@@ -3,16 +3,19 @@ import { PrismaService } from '../prisma/prisma.service';
 import OpenAI from 'openai';
 import { ConfigService } from '@nestjs/config';
 
+const GROQ_BASE_URL = 'https://api.groq.com/openai/v1';
+const GROQ_MODEL = 'llama-3.3-70b-versatile';
+
 @Injectable()
 export class QuestionsService {
-  private openai: OpenAI | null = null;
+  private client: OpenAI | null = null;
 
   constructor(
     private readonly prisma: PrismaService,
     configService: ConfigService,
   ) {
-    const key = configService.get<string>('OPENAI_API_KEY');
-    if (key) this.openai = new OpenAI({ apiKey: key });
+    const key = configService.get<string>('GROQ_API_KEY');
+    if (key) this.client = new OpenAI({ apiKey: key, baseURL: GROQ_BASE_URL });
   }
 
   // === QUESTÕES ===
@@ -78,7 +81,6 @@ export class QuestionsService {
       include: { topic: true, exam: true, alternatives: true, tags: true },
     });
 
-    // Create stats record
     await this.prisma.questionStats.create({ data: { questionId: question.id } });
     return question;
   }
@@ -135,7 +137,6 @@ export class QuestionsService {
     const correct = attempts.filter((a) => a.correct).length;
     const avgTime = total > 0 ? attempts.reduce((a, b) => a + (b.timeSpent ?? 0), 0) / total : 0;
 
-    // Per-alternative distribution
     const altDistribution: Record<string, number> = {};
     attempts.forEach((a) => { if (a.selectedId) altDistribution[a.selectedId] = (altDistribution[a.selectedId] ?? 0) + 1; });
 
@@ -149,13 +150,13 @@ export class QuestionsService {
 
   // === GERADOR COM IA ===
   async generateWithAI(topicId: string, count: number = 3, difficulty?: string) {
-    if (!this.openai) throw new Error('OPENAI_API_KEY não configurada');
+    if (!this.client) throw new Error('GROQ_API_KEY não configurada');
 
     const topic = await this.prisma.topic.findUnique({ where: { id: topicId }, include: { subject: true } });
     if (!topic) throw new NotFoundException('Tópico não encontrado');
 
-    const completion = await this.openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+    const completion = await this.client.chat.completions.create({
+      model: GROQ_MODEL,
       messages: [{
         role: 'system',
         content: `Você é um professor de engenharia. Gere ${count} questões de múltipla escolha sobre "${topic.name}" (${topic.subject.name}). 

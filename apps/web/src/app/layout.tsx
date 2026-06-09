@@ -4,6 +4,7 @@ import { Inter, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/auth-context";
+import { QueryProvider } from "@/components/query-provider";
 
 const fontSans = Inter({
   variable: "--font-sans",
@@ -34,7 +35,9 @@ export default function RootLayout({
       <body>
         <Toaster richColors closeButton position="top-right" />
         <TooltipProvider>
-          <AuthProvider>{children}</AuthProvider>
+          <QueryProvider>
+            <AuthProvider>{children}</AuthProvider>
+          </QueryProvider>
         </TooltipProvider>
       </body>
     </html>

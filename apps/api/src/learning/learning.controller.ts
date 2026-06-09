@@ -1,14 +1,15 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { LearningService } from './learning.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { EnrollUserDto, MarkProgressDto, SubmitAttemptDto } from './dto';
 
 @Controller('learning')
 export class LearningController {
   constructor(private readonly learningService: LearningService) {}
 
   @Post('enroll')
-  enrollUser(@Body() body: { userId: string; courseId: string }) {
-    return this.learningService.enrollUser(body.userId, body.courseId);
+  enrollUser(@Body() dto: EnrollUserDto) {
+    return this.learningService.enrollUser(dto.userId, dto.courseId);
   }
 
   @Get('enrollments/:userId')
@@ -32,8 +33,8 @@ export class LearningController {
   }
 
   @Post('progress')
-  markProgress(@Body() body: { userId: string; lessonId: string; completed: boolean }) {
-    return this.learningService.markProgress(body.userId, body.lessonId, body.completed);
+  markProgress(@Body() dto: MarkProgressDto) {
+    return this.learningService.markProgress(dto.userId, dto.lessonId, dto.completed);
   }
 
   @Get('progress/:userId/:courseId')
@@ -62,15 +63,8 @@ export class LearningController {
   }
 
   @Post('attempts')
-  submitAttempt(@Body() body: {
-    userId: string;
-    questionId: string;
-    selectedId: string;
-    correct: boolean;
-    timeSpent?: number;
-    hintUsed?: boolean;
-  }) {
-    return this.learningService.submitAttempt(body);
+  submitAttempt(@Body() dto: SubmitAttemptDto) {
+    return this.learningService.submitAttempt(dto);
   }
 
   @Get('model/:userId')

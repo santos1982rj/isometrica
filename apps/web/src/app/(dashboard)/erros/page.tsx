@@ -192,7 +192,7 @@ export default function ErrosPage() {
                         )}
                         {feedback && (
                           <span className={cn('text-xs font-semibold', acertou ? 'text-isometrica-success' : 'text-isometrica-danger')}>
-                            {acertou ? '✅ Correto!' : '❌ Ainda errado. Reveja o conteúdo.'}
+                            {acertou ? <span className="inline-flex items-center gap-1"><CheckCircle className="size-3" /> Correto!</span> : <span className="inline-flex items-center gap-1"><XCircle className="size-3" /> Ainda errado. Reveja o conteúdo.</span>}
                           </span>
                         )}
                         {feedback && q.explanation && (

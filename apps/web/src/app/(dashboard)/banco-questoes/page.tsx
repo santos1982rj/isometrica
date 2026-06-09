@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Pagination } from '@/components/pagination'
 import {
   Search, Filter, ChevronRight, ChevronDown, BookOpen, BarChart3, Clock, CheckCircle,
-  XCircle, Sparkles, GraduationCap, Target, ChevronLeft, FileQuestion, Brain,
+  XCircle,   Sparkles, GraduationCap, Target, ChevronLeft, FileQuestion, Brain, Lightbulb,
 } from 'lucide-react'
 
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.03 } } }
@@ -202,7 +202,7 @@ export default function BancoQuestoesPage() {
                         {/* Explicação */}
                         {q.explanation && (
                           <div className="rounded-lg bg-muted/30 p-3">
-                            <p className="text-xs font-semibold mb-1">💡 Explicação</p>
+                            <div className="flex items-center gap-1 mb-1"><Lightbulb className="size-3 text-muted-foreground" /><p className="text-xs font-semibold">Explicação</p></div>
                             <p className="text-xs text-muted-foreground leading-relaxed">{q.explanation}</p>
                           </div>
                         )}
@@ -230,7 +230,7 @@ export default function BancoQuestoesPage() {
                               <p className={cn('font-display text-lg font-bold', dominio.isMastered ? 'text-isometrica-success' : '')}>
                                 {dominio.consecutiveCorrect}/{dominio.targetToMaster}
                               </p>
-                              <p className="text-[9px] text-muted-foreground">{dominio.isMastered ? 'Dominado! 🎉' : 'Acertos consecutivos'}</p>
+                              <p className="text-[9px] text-muted-foreground">{dominio.isMastered ? <span className="inline-flex items-center gap-1">Dominado! <Sparkles className="size-3 text-isometrica-success" /></span> : 'Acertos consecutivos'}</p>
                             </div>
                           )}
                         </div>

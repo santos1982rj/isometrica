@@ -10,5 +10,8 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'lcov'],
     },
+    typecheck: {
+      tsconfig: './tsconfig.json',
+    },
   },
 });

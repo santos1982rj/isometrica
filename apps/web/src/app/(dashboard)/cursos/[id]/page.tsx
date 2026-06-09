@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/auth-context'
 import { Badge } from '@/components/ui/badge'
 import {
   ChevronRight, Play, FileText, BookOpen, GraduationCap, Clock, CheckCircle, Lock, Loader2,
-  ChevronDown, ChevronUp, Sparkles, BarChart3, Users, Award, Crown, Star, AlignLeft,
+  ChevronDown, ChevronUp, Sparkles, BarChart3, Users, Award, Crown, Star, AlignLeft, Link2, Briefcase,
 } from 'lucide-react'
 
 const levelLabel: Record<string, string> = {
@@ -310,8 +310,8 @@ export default function CursoDetalhePage(props: { params: Promise<{ id: string }
                   <p className="text-xs text-muted-foreground">Doutor em Engenharia Civil</p>
                   <p className="text-[10px] text-muted-foreground/70">{curso.subject?.name ?? 'Engenharia'}</p>
                   <div className="mt-1.5 flex items-center gap-2">
-                    <a href="#" className="text-[10px] text-isometrica-accent hover:underline">🔗 Lattes</a>
-                    <a href="#" className="text-[10px] text-isometrica-accent hover:underline">💼 LinkedIn</a>
+                    <a href="#" className="inline-flex items-center gap-1 text-[10px] text-isometrica-accent hover:underline"><Link2 className="size-3" /> Lattes</a>
+                    <a href="#" className="inline-flex items-center gap-1 text-[10px] text-isometrica-accent hover:underline"><Briefcase className="size-3" /> LinkedIn</a>
                   </div>
                 </div>
               </div>

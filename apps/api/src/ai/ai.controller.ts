@@ -17,14 +17,13 @@ export class AiController {
   }
 
   @Post('conversations/:id/stream')
-  async streamMessage(@Param('id') id: string, @Body() body: { role: string; content: string }, @Res() res: Response) {
+  async streamMessage(@Param('id') id: string, @Body() _body: { role: string; content: string }, @Res() res: Response) {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.setHeader('X-Accel-Buffering', 'no');
 
-    const userMsg = await this.aiService.addMessage({ conversationId: id, role: 'user', content: body.content });
-
+    // User message is already saved by the frontend before calling stream
     const reply = await this.aiService.streamReply(id, res);
 
     if (reply) {

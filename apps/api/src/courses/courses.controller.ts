@@ -4,34 +4,38 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../generated/prisma/enums';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Public } from '../auth/decorators/public.decorator';
+import { CreateCourseDto, UpdateCourseDto } from './dto';
 
 @Controller('courses')
 export class CoursesController {
   constructor(private readonly coursesService: CoursesService) {}
 
   @Get()
+  @Public()
   findAll() {
     return this.coursesService.findAll();
   }
 
   @Get(':id')
+  @Public()
   findById(@Param('id') id: string) {
     return this.coursesService.findById(id);
   }
 
   @Post()
   @Roles(UserRole.PROFESSOR, UserRole.ADMIN)
-  create(@Body() body: { name: string; description: string; category?: string; imageUrl?: string; color?: string; estimatedHours?: number; level?: string; premium?: boolean; certificateEnabled?: boolean; price?: number }) {
-    return this.coursesService.create(body);
+  create(@Body() dto: CreateCourseDto) {
+    return this.coursesService.create(dto);
   }
 
   @Put(':id')
   @Roles(UserRole.PROFESSOR, UserRole.ADMIN)
-  update(@Param('id') id: string, @Body() body: { name?: string; description?: string; imageUrl?: string; category?: string }) {
-    return this.coursesService.update(id, body);
+  update(@Param('id') id: string, @Body() dto: UpdateCourseDto) {
+    return this.coursesService.update(id, dto);
   }
 
   @Get('search/:q')
+  @Public()
   async search(@Param('q') q: string) {
     const [courses, modules, lessons] = await Promise.all([
       this.coursesService.searchCourses(q),

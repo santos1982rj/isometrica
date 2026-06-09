@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { api } from '@/lib/api'
-import { Award, Download, ChevronRight, GraduationCap, Calendar, BarChart3, Clock, CheckCircle } from 'lucide-react'
+import { Award, Download, ChevronRight, GraduationCap, Calendar, BarChart3, Clock, CheckCircle, Share2 } from 'lucide-react'
 
 const container = {
   hidden: {},
@@ -88,13 +88,25 @@ export default function CertificadosPage() {
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => window.print()}
-                    className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-lg border border-border py-2 text-xs font-semibold transition-all hover:bg-muted"
-                  >
-                    <Download className="size-3.5" />
-                    Download (em breve)
-                  </button>
+                  <div className="mt-4 flex gap-2">
+                    <button
+                      onClick={() => window.print()}
+                      className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border py-2 text-xs font-semibold transition-all hover:bg-muted"
+                    >
+                      <Download className="size-3.5" />
+                      Download
+                    </button>
+                    <button
+                      onClick={() => {
+                        const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`${window.location.origin}/u/${cert.userId}`)}&title=${encodeURIComponent(`Certificado: ${cert.title} — Isométrica`)}&summary=${encodeURIComponent(`Concluí o curso "${cert.title}" na Isométrica com ${cert.proficiency}% de proficiência e ${cert.totalHours}h de carga horária.`)}`;
+                        window.open(url, '_blank', 'width=600,height=600');
+                      }}
+                      className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-isometrica-accent/30 bg-isometrica-accent/[0.03] py-2 text-xs font-semibold text-isometrica-accent transition-all hover:bg-isometrica-accent/10"
+                    >
+                      <Share2 className="size-3.5" />
+                      Compartilhar
+                    </button>
+                  </div>
                 </div>
               </div>
             </motion.div>

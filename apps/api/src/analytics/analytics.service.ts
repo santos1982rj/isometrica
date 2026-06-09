@@ -46,16 +46,22 @@ export class AnalyticsService {
       where: { question: { topic: { subjectId: { in: courses.map((c) => c.subjectId).filter(Boolean) as string[] } } } },
     });
 
-    const courseStats = await Promise.all(courses.map(async (course) => {
-      const cLessons = course.modules.flatMap((m) => m.lessons);
-      const cLessonIds = cLessons.map((l) => l.id);
-      const completedLessons = await this.prisma.lessonProgress.count({
-        where: { lessonId: { in: cLessonIds }, completed: true },
-      });
+    const allCourseLessonIds = courses.map((c) => ({
+      id: c.id,
+      lessonIds: c.modules.flatMap((m) => m.lessons.map((l) => l.id)),
+    }));
+    const completedCounts = await this.prisma.lessonProgress.groupBy({
+      by: ['lessonId'],
+      where: { lessonId: { in: allCourseLessonIds.flatMap((c) => c.lessonIds) }, completed: true },
+      _count: { lessonId: true },
+    });
+    const completedByLesson = new Map(completedCounts.map((r) => [r.lessonId, r._count.lessonId]));
 
+    const courseStats = courses.map((course) => {
+      const cLessonIds = allCourseLessonIds.find((c) => c.id === course.id)!.lessonIds;
+      const completedLessons = cLessonIds.reduce((sum, lid) => sum + (completedByLesson.get(lid) ?? 0), 0);
       const totalPossible = cLessonIds.length * course.enrollments.length;
       const completionRate = totalPossible > 0 ? Math.round((completedLessons / totalPossible) * 100) : 0;
-
       return {
         id: course.id,
         name: course.name,
@@ -64,18 +70,24 @@ export class AnalyticsService {
         totalStudents: course.enrollments.length,
         completionRate,
       };
-    }));
+    });
 
     const totalAttempts = attempts.reduce((a, r) => a + r._count.id, 0);
     const correctAttempts = attempts.filter((r) => r.correct).reduce((a, r) => a + r._count.id, 0);
     const avgAccuracy = totalAttempts > 0 ? Math.round((correctAttempts / totalAttempts) * 100) : 0;
 
     // Students needing attention (low accuracy, < 50%)
+    const uniqueUserIds = [...new Set(attempts.map((a) => a.userId))];
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: uniqueUserIds } },
+      select: { id: true, name: true },
+    });
+    const userMap = new Map(users.map((u) => [u.id, u.name ?? 'Unknown']));
+
     const studentAccuracy: Record<string, { total: number; correct: number; name: string }> = {};
     for (const a of attempts) {
       if (!studentAccuracy[a.userId]) {
-        const user = await this.prisma.user.findUnique({ where: { id: a.userId }, select: { name: true } });
-        studentAccuracy[a.userId] = { total: 0, correct: 0, name: user?.name ?? 'Unknown' };
+        studentAccuracy[a.userId] = { total: 0, correct: 0, name: userMap.get(a.userId) ?? 'Unknown' };
       }
       studentAccuracy[a.userId].total += a._count.id;
       if (a.correct) studentAccuracy[a.userId].correct += a._count.id;
@@ -113,17 +125,31 @@ export class AnalyticsService {
 
     const allLessonIds = course.modules.flatMap((m) => m.lessons.map((l) => l.id));
 
-    return Promise.all(enrollments.map(async (e) => {
-      const completedCount = await this.prisma.lessonProgress.count({
-        where: { userId: e.user.id, lessonId: { in: allLessonIds }, completed: true },
-      });
+    const userIds = enrollments.map((e) => e.user.id);
+    const [progressCounts, userAttempts] = await Promise.all([
+      this.prisma.lessonProgress.groupBy({
+        by: ['userId'],
+        where: { userId: { in: userIds }, lessonId: { in: allLessonIds }, completed: true },
+        _count: { lessonId: true },
+      }),
+      this.prisma.questionAttempt.groupBy({
+        by: ['userId', 'correct'],
+        where: { userId: { in: userIds } },
+        _count: { id: true },
+      }),
+    ]);
+    const progressMap = new Map(progressCounts.map((p) => [p.userId, p._count.lessonId]));
+    const attemptMap = new Map<string, { total: number; correct: number }>();
+    for (const a of userAttempts) {
+      if (!attemptMap.has(a.userId)) attemptMap.set(a.userId, { total: 0, correct: 0 });
+      const entry = attemptMap.get(a.userId)!;
+      entry.total += a._count.id;
+      if (a.correct) entry.correct += a._count.id;
+    }
 
-      const userAttempts = await this.prisma.questionAttempt.findMany({
-        where: { userId: e.user.id },
-      });
-      const total = userAttempts.length;
-      const correct = userAttempts.filter((a) => a.correct).length;
-
+    return enrollments.map((e) => {
+      const completedCount = progressMap.get(e.user.id) ?? 0;
+      const stats = attemptMap.get(e.user.id) ?? { total: 0, correct: 0 };
       return {
         id: e.user.id,
         name: e.user.name,
@@ -132,9 +158,9 @@ export class AnalyticsService {
         progress: allLessonIds.length > 0 ? Math.round((completedCount / allLessonIds.length) * 100) : 0,
         completedLessons: completedCount,
         totalLessons: allLessonIds.length,
-        accuracy: total > 0 ? Math.round((correct / total) * 100) : 0,
-        totalQuestions: total,
+        accuracy: stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0,
+        totalQuestions: stats.total,
       };
-    }));
+    });
   }
 }

@@ -19,11 +19,7 @@ export default function EsqueceuSenhaPage() {
     setErro('');
     setCarregando(true);
     try {
-      const res = await api.auth.esqueceuSenha(email);
-      if (res.reset_token) {
-        const params = new URLSearchParams({ token: res.reset_token });
-        window.location.href = `/recuperar-senha?${params}`;
-      }
+      await api.auth.esqueceuSenha(email);
       setEnviado(true);
     } catch (err) {
       setErro(err instanceof Error ? err.message : 'Erro ao solicitar recuperação');

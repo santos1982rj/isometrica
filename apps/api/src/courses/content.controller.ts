@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Put, Delete, Param, Body } from '@nestjs/common';
 import { ContentService } from './content.service';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { Public } from '../auth/decorators/public.decorator';
 import { UserRole } from '../generated/prisma/enums';
 
 @Controller()
@@ -8,11 +9,13 @@ export class ContentController {
   constructor(private readonly contentService: ContentService) {}
 
   @Get('lessons/:id')
+  @Public()
   findLesson(@Param('id') id: string) {
     return this.contentService.findLesson(id);
   }
 
   @Get('lessons/:id/questions')
+  @Public()
   findLessonQuestions(@Param('id') id: string) {
     return this.contentService.findLessonQuestions(id);
   }
