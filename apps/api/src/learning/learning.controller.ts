@@ -78,6 +78,16 @@ export class LearningController {
     return this.learningService.getStudentModel(userId);
   }
 
+  @Get('review/:userId')
+  getReview(@Param('userId') userId: string) {
+    return this.learningService.getReviewQuestions(userId);
+  }
+
+  @Post('review/:questionId/answer')
+  answerReview(@Param('questionId') questionId: string, @Body() body: { userId: string; correct: boolean }) {
+    return this.learningService.answerReview(body.userId, questionId, body.correct);
+  }
+
   @Get('errors/:userId')
   getErrors(@Param('userId') userId: string) {
     return this.learningService.getUserErrors(userId);

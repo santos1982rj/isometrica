@@ -91,4 +91,10 @@ export class QuestionsController {
   createExam(@Body() body: any) {
     return this.questionsService.createExam(body);
   }
+
+  @Post('import')
+  @Roles(UserRole.PROFESSOR, UserRole.ADMIN)
+  importQuestions(@Body() body: { questions: any[] }) {
+    return this.questionsService.importQuestions(body.questions);
+  }
 }

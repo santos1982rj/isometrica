@@ -187,6 +187,29 @@ export class QuestionsService {
     return created;
   }
 
+  // === IMPORTAÇÃO ===
+  async importQuestions(data: any[]) {
+    let created = 0; let failed = 0; const errors: string[] = []
+    for (const q of data) {
+      try {
+        if (!q.text || !q.topicId) { failed++; errors.push(`Questão sem texto ou topicId`); continue }
+        await this.prisma.question.create({
+          data: {
+            text: q.text, type: q.type ?? 'MULTIPLA_ESCOLHA', difficulty: q.difficulty ?? 'MEDIUM',
+            bloomLevel: q.bloomLevel ?? 'REMEMBER', estimatedTime: q.estimatedTime ?? 5,
+            explanation: q.explanation, topicId: q.topicId, examId: q.examId,
+            status: 'PUBLICADA',
+            alternatives: q.alternatives ? { create: q.alternatives.map((a: any) => ({ text: a.text, isCorrect: a.isCorrect ?? false, feedback: a.feedback })) } : undefined,
+            tags: q.tags ? { create: q.tags.map((t: string) => ({ tag: t })) } : undefined,
+            stats: { create: {} },
+          },
+        })
+        created++
+      } catch (e: any) { failed++; errors.push(e.message) }
+    }
+    return { created, failed, errors: errors.slice(0, 10) }
+  }
+
   // === MODO CONCURSO ===
   async getExamSimulado(examId: string, limit: number = 10) {
     const questions = await this.prisma.question.findMany({

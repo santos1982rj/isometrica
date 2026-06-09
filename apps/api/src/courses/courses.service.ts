@@ -68,6 +68,29 @@ export class CoursesService {
     return { message: 'Curso removido' };
   }
 
+  async searchCourses(q: string) {
+    return this.prisma.course.findMany({
+      where: { OR: [{ name: { contains: q, mode: 'insensitive' } }, { description: { contains: q, mode: 'insensitive' } }] },
+      take: 5,
+    });
+  }
+
+  async searchModules(q: string) {
+    return this.prisma.module.findMany({
+      where: { name: { contains: q, mode: 'insensitive' } },
+      include: { course: { select: { id: true, name: true } } },
+      take: 5,
+    });
+  }
+
+  async searchLessons(q: string) {
+    return this.prisma.lesson.findMany({
+      where: { title: { contains: q, mode: 'insensitive' } },
+      include: { module: { include: { course: { select: { id: true, name: true } } } } },
+      take: 5,
+    });
+  }
+
   async purchaseCourse(userId: string, courseId: string) {
     const course = await this.prisma.course.findUnique({ where: { id: courseId } });
     if (!course) throw new NotFoundException('Curso não encontrado');

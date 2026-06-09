@@ -31,6 +31,16 @@ export class CoursesController {
     return this.coursesService.update(id, body);
   }
 
+  @Get('search/:q')
+  async search(@Param('q') q: string) {
+    const [courses, modules, lessons] = await Promise.all([
+      this.coursesService.searchCourses(q),
+      this.coursesService.searchModules(q),
+      this.coursesService.searchLessons(q),
+    ]);
+    return { results: { courses, modules, lessons }, total: courses.length + modules.length + lessons.length };
+  }
+
   @Delete(':id')
   @Roles(UserRole.ADMIN)
   remove(@Param('id') id: string) {

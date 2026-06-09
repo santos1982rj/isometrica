@@ -87,6 +87,7 @@ model User {
   tutorActions      TutorAction[]
   certificates      Certificate[]
   questionComments  QuestionComment[]
+  reviewSchedules   ReviewSchedule[]
 }
 
 model Subject {
@@ -207,6 +208,7 @@ model Question {
   tags             QuestionTag[]
   stats            QuestionStats?
   comments         QuestionComment[]
+  reviewSchedules  ReviewSchedule[]
 }
 
 model Alternative {
@@ -246,6 +248,22 @@ model QuestionStats {
   correctAttempts Int     @default(0)
   avgTimeSeconds  Float   @default(0)
   question        Question @relation(fields: [questionId], references: [id])
+}
+
+model ReviewSchedule {
+  id           String   @id @default(cuid())
+  userId       String
+  questionId   String
+  ease         Float    @default(2.5)
+  interval     Int      @default(0)
+  nextReview   DateTime @default(now())
+  lastReviewAt DateTime?
+  createdAt    DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id])
+  question Question @relation(fields: [questionId], references: [id])
+
+  @@unique([userId, questionId])
 }
 
 model QuestionComment {

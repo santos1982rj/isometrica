@@ -5,6 +5,9 @@ import { usePathname } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
 import { cn } from '@/lib/utils'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { useState, useRef, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { api } from '@/lib/api'
 import {
   SidebarProvider,
   Sidebar,
@@ -35,6 +38,7 @@ import {
   CreditCard,
   Gamepad2,
   FileQuestion,
+  Play,
   Users,
   User,
   Settings,
@@ -76,6 +80,61 @@ const menuAdmin = [
   { rotulo: 'Financeiro', href: '/admin/financeiro', icone: DollarSign },
   { rotulo: 'Analytics', href: '#', icone: BarChart3 },
 ]
+
+function SearchBar() {
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState<any>(null)
+  const [open, setOpen] = useState(false)
+  const router = useRouter()
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }
+    document.addEventListener('mousedown', handler); return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  async function handleSearch(val: string) {
+    setQuery(val)
+    if (val.length < 2) { setResults(null); setOpen(false); return }
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api'
+      const res = await fetch(`${API_URL}/courses/search/${encodeURIComponent(val)}`)
+      if (res.ok) { const data = await res.json(); setResults(data.results); setOpen(true) }
+    } catch {}
+  }
+
+  function goTo(path: string) { setOpen(false); setQuery(''); router.push(path) }
+
+  return (
+    <div ref={ref} className="relative hidden sm:flex items-center gap-2 rounded-md border border-border bg-muted/50 px-3 py-1.5 text-sm text-muted-foreground transition-colors focus-within:border-isometrica-accent focus-within:bg-card focus-within:shadow-[0_0_0_3px_rgba(232,93,50,0.12)] max-w-xs flex-1">
+      <Search className="size-3.5 shrink-0" />
+      <input value={query} onChange={e => handleSearch(e.target.value)} placeholder="Buscar..."
+        className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground" />
+      {open && results && (results.courses?.length > 0 || results.lessons?.length > 0) && (
+        <div className="absolute left-0 right-0 top-full mt-2 rounded-xl border border-border bg-card shadow-lg p-2 z-50">
+          {results.courses?.length > 0 && (
+            <div className="mb-2"><p className="px-2 py-1 text-[9px] font-semibold uppercase text-muted-foreground">Cursos</p>
+              {results.courses.slice(0, 3).map((c: any) => (
+                <button key={c.id} onClick={() => goTo(`/cursos/${c.id}`)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs hover:bg-muted transition-colors text-left">
+                  <BookOpen className="size-3 shrink-0 text-isometrica-accent" /> {c.name}
+                </button>
+              ))}
+            </div>
+          )}
+          {results.lessons?.length > 0 && (
+            <div><p className="px-2 py-1 text-[9px] font-semibold uppercase text-muted-foreground">Aulas</p>
+              {results.lessons.slice(0, 4).map((l: any) => (
+                <button key={l.id} onClick={() => goTo(`/aulas/${l.id}`)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs hover:bg-muted transition-colors text-left">
+                  <Play className="size-3 shrink-0 text-isometrica-accent" /> {l.title}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
 
 function SidebarNav({ pathname, role }: { pathname: string; role: string }) {
   const isActive = (href: string) => {
@@ -211,13 +270,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <SidebarInset>
         <header className="flex h-14 items-center gap-2 border-b border-border px-3 lg:px-4 lg:gap-3">
           <SidebarTrigger />
-          <div className="hidden sm:flex items-center gap-2 rounded-md border border-border bg-muted/50 px-3 py-1.5 text-sm text-muted-foreground transition-colors focus-within:border-isometrica-accent focus-within:bg-card focus-within:shadow-[0_0_0_3px_rgba(232,93,50,0.12)] max-w-xs flex-1">
-            <Search className="size-3.5 shrink-0" />
-            <input
-              placeholder="Buscar..."
-              className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-            />
-          </div>
+          <SearchBar />
 
           <div className="ml-auto flex items-center gap-1.5 lg:gap-2">
             <div className="hidden sm:flex items-center gap-1.5 rounded-full bg-isometrica-accent/10 px-3 py-1 text-xs font-semibold text-isometrica-accent border border-isometrica-accent/15">

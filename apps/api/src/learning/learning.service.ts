@@ -227,6 +227,57 @@ export class LearningService {
     return attempt;
   }
 
+  // === SM-2 SPACED REPETITION ===
+  async getReviewQuestions(userId: string) {
+    const now = new Date();
+    const schedules = await this.prisma.reviewSchedule.findMany({
+      where: { userId, nextReview: { lte: now } },
+      include: { question: { include: { alternatives: true, topic: true } } },
+      orderBy: { nextReview: 'asc' },
+      take: 20,
+    });
+    return schedules.map((s) => ({ id: s.id, question: s.question, nextReview: s.nextReview, ease: s.ease }));
+  }
+
+  async answerReview(userId: string, questionId: string, correct: boolean) {
+    const schedule = await this.prisma.reviewSchedule.findUnique({
+      where: { userId_questionId: { userId, questionId } },
+    });
+
+    if (!schedule) {
+      // First review
+      const interval = correct ? 1 : 0;
+      const ease = correct ? 2.5 : 1.3;
+      const nextReview = new Date();
+      nextReview.setDate(nextReview.getDate() + (interval || 1));
+      return this.prisma.reviewSchedule.create({
+        data: { userId, questionId, ease, interval, nextReview, lastReviewAt: new Date() },
+      });
+    }
+
+    // SM-2 algorithm
+    let { ease, interval } = schedule;
+    if (correct) {
+      if (interval === 0) interval = 1;
+      else if (interval === 1) interval = 3;
+      else interval = Math.round(interval * ease);
+      ease = Math.min(ease + 0.1, 3.0);
+    } else {
+      interval = 0;
+      ease = Math.max(ease - 0.2, 1.3);
+    }
+
+    const nextReview = new Date();
+    nextReview.setDate(nextReview.getDate() + interval);
+
+    await this.prisma.questionAttempt.create({ data: { userId, questionId, selectedId: '', correct } });
+
+    return this.prisma.reviewSchedule.update({
+      where: { userId_questionId: { userId, questionId } },
+      data: { ease, interval, nextReview, lastReviewAt: new Date() },
+    });
+  }
+
   async getUserErrors(userId: string) {
     const attempts = await this.prisma.questionAttempt.findMany({
       where: { userId, correct: false },

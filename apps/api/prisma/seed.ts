@@ -436,6 +436,8 @@ const topicDefs = [
   { name: 'Treliças', subjectName: 'Análise Estrutural' },
 ]
 
+import { questoesPorTopico, exames } from './questions-seed';
+
 const questionsByTopic = [
   { topic: 'Limites', difficulty: 'EASY', bloom: 'REMEMBER', text: 'Qual o valor do limite lim(x→2) (x² − 4)/(x − 2)?', alternatives: ['0', '2', '4', '∞', '-4'], correct: 2 },
   { topic: 'Limites', difficulty: 'MEDIUM', bloom: 'UNDERSTAND', text: 'Se lim(x→a) f(x) = L e lim(x→a) g(x) = M, qual o valor de lim(x→a) [f(x) + g(x)]?', alternatives: ['L · M', 'L + M', 'L − M', 'L/M', 'Não existe'], correct: 1 },
@@ -471,6 +473,9 @@ async function main() {
   await prisma.lessonProgress.deleteMany()
   await prisma.questionAttempt.deleteMany()
   await prisma.alternative.deleteMany()
+  await prisma.questionComment.deleteMany()
+  await prisma.questionTag.deleteMany()
+  await prisma.questionStats.deleteMany()
   await prisma.question.deleteMany()
   await prisma.topic.deleteMany()
   await prisma.lesson.deleteMany()
@@ -590,8 +595,17 @@ async function main() {
   }
   console.log(`  ${Object.keys(createdTopics).length} tópicos criados`)
 
-  // Questions
+  // Exams
+  const createdExams: string[] = []
+  for (const exam of exames) {
+    const e = await prisma.exam.create({ data: exam })
+    createdExams.push(e.id)
+  }
+  console.log(`  ${createdExams.length} concursos criados`)
+
+  // Questions — massive seed
   let qCount = 0
+  // First, the original 15 questions
   for (const q of questionsByTopic) {
     const topicId = createdTopics[q.topic]
     if (!topicId) continue
@@ -601,17 +615,42 @@ async function main() {
         difficulty: q.difficulty as any,
         bloomLevel: q.bloom as any,
         text: q.text,
-        alternatives: {
-          create: q.alternatives.map((text, i) => ({
-            text,
-            isCorrect: i === q.correct,
-          })),
-        },
+        alternatives: { create: q.alternatives.map((text, i) => ({ text, isCorrect: i === q.correct })) },
       },
     })
     qCount++
   }
-  console.log(`  ${qCount} questões criadas`)
+
+  // Then, the massive question bank
+  for (const [topicKey, qs] of Object.entries(questoesPorTopico)) {
+    const topicId = createdTopics[topicKey]
+    if (!topicId) continue
+    for (const q of qs) {
+      const questionData: any = {
+        topicId,
+        text: q.text,
+        difficulty: q.difficulty,
+        bloomLevel: q.bloomLevel,
+        explanation: q.explanation,
+        estimatedTime: q.estimatedTime,
+        type: 'MULTIPLA_ESCOLHA',
+        status: 'PUBLICADA',
+      }
+      if (q.examIndex !== undefined && q.examIndex < createdExams.length) {
+        questionData.examId = createdExams[q.examIndex]
+      }
+      await prisma.question.create({
+        data: {
+          ...questionData,
+          alternatives: { create: q.alternatives.map((a) => ({ text: a.text, isCorrect: a.isCorrect, feedback: a.feedback })) },
+          tags: { create: q.tags.map((tag) => ({ tag })) },
+          stats: { create: {} },
+        },
+      })
+      qCount++
+    }
+  }
+  console.log(`  ${qCount} questões criadas (${qCount - 15} do banco novo)`)
 
   // Gamification profile for student
   const student = createdUsers.find(u => u.role === 'STUDENT')
