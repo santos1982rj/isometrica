@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "nest start --watch",
-    "build": "prisma generate && nest build --tsc --tsConfigPath tsconfig.build.json",
+    "build": "prisma generate && nest build --tsc --path tsconfig.build.json",
     "start": "node dist/main",
     "start:prod": "node dist/main",
     "seed": "tsx prisma/seed.ts",
