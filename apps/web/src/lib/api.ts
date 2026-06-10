@@ -1,22 +1,20 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
 
-function getToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem('token');
-}
-
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const token = getToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
   };
 
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
+  const res = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers,
+    credentials: 'include',
+  });
 
-  const res = await fetch(`${API_URL}${path}`, { ...options, headers });
+  if (res.status === 401) {
+    return Promise.reject(new Error('Não autorizado'));
+  }
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({ message: 'Erro na requisição' }));
@@ -60,6 +58,8 @@ export const api = {
       }),
 
     perfil: () => request<Usuario>('/auth/perfil'),
+
+    logout: () => request<{ mensagem: string }>('/auth/logout', { method: 'POST' }),
   },
 
   courses: {
@@ -138,6 +138,8 @@ export const api = {
   analytics: {
     professor: () => request<ProfessorAnalytics>('/analytics/professor'),
     cursoAlunos: (courseId: string) => request<any[]>(`/analytics/professor/courses/${courseId}/students`),
+    eventos: (userId: string) => request<{ id: string; type: string; metadata: any; createdAt: string }[]>(`/analytics/events/${userId}`),
+    sumario: () => request<{ type: string; _count: { id: number } }[]>('/analytics/summary'),
   },
 
   gamification: {
@@ -151,9 +153,7 @@ export const api = {
 
   profile: {
     me: () => request<any>('/profile'),
-
     atualizar: (data: any) => request<any>('/profile', { method: 'PUT', body: JSON.stringify(data) }),
-
     publico: (id: string) => request<any>(`/profile/public/${id}`),
   },
 
@@ -167,29 +167,17 @@ export const api = {
 
   questions: {
     listar: (params?: Record<string, string>) => request<any>(`/questions?${new URLSearchParams(params ?? {}).toString()}`),
-
     obter: (id: string) => request<any>(`/questions/${id}`),
-
     criar: (data: any) => request<any>('/questions', { method: 'POST', body: JSON.stringify(data) }),
-
     atualizar: (id: string, data: any) => request<any>(`/questions/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-
     remover: (id: string) => request<any>(`/questions/${id}`, { method: 'DELETE' }),
-
     arvore: () => request<any[]>('/questions/tree'),
-
     tags: () => request<any[]>('/questions/tags'),
-
     exames: (params?: Record<string, string>) => request<any>(`/questions/exams?${new URLSearchParams(params ?? {}).toString()}`),
-
     criarExame: (data: any) => request<any>('/questions/exams', { method: 'POST', body: JSON.stringify(data) }),
-
     stats: (id: string) => request<any>(`/questions/stats/${id}`),
-
     dominio: (topicId: string) => request<any>(`/questions/mastery/${topicId}`),
-
     simulado: (examId: string, limit = 10) => request<any>(`/questions/simulado/${examId}?limit=${limit}`),
-
     gerarComIA: (topicId: string, count = 3, difficulty?: string) =>
       request<any>(`/questions/generate/${topicId}`, { method: 'POST', body: JSON.stringify({ count, difficulty }) }),
   },

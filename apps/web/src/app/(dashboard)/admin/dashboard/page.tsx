@@ -1,7 +1,10 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/contexts/auth-context'
+import { api } from '@/lib/api'
+import type { AdminFinanceiro, UsuarioAdmin, Curso } from '@/lib/types'
 import {
   Users,
   DollarSign,
@@ -14,6 +17,7 @@ import {
   UserPlus,
   CreditCard,
   GraduationCap,
+  Loader2,
 } from 'lucide-react'
 
 const container = {
@@ -26,23 +30,51 @@ const item = {
   show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] as const } },
 }
 
-const stats = [
-  { label: 'Usuários Totais', value: '2.847', variacao: '+12%', icon: Users, color: 'text-isometrica-info', bg: 'bg-isometrica-info/10', up: true },
-  { label: 'Receita Mensal', value: 'R$ 28.450', variacao: '+8%', icon: DollarSign, color: 'text-isometrica-success', bg: 'bg-isometrica-success/10', up: true },
-  { label: 'Cursos Ativos', value: '24', variacao: '+3', icon: BookOpen, color: 'text-isometrica-accent', bg: 'bg-isometrica-accent/10', up: true },
-  { label: 'Churn Rate', value: '4,2%', variacao: '-0.8%', icon: TrendingDown, color: 'text-isometrica-danger', bg: 'bg-isometrica-danger/10', up: false },
-]
-
-const usuariosRecentes = [
-  { nome: 'Ana Oliveira', email: 'ana@email.com', papel: 'Estudante', data: 'Hoje' },
-  { nome: 'Prof. Carlos Mendes', email: 'carlos@email.com', papel: 'Professor', data: 'Ontem' },
-  { nome: 'Lucas Pereira', email: 'lucas@email.com', papel: 'Estudante', data: 'Ontem' },
-  { nome: 'Marina Costa', email: 'marina@email.com', papel: 'Estudante', data: '2 dias atrás' },
-  { nome: 'Dr. Rafael Souza', email: 'rafael@email.com', papel: 'Professor', data: '3 dias atrás' },
-]
-
 export default function AdminDashboardPage() {
   const { usuario } = useAuth()
+  const [financeiro, setFinanceiro] = useState<AdminFinanceiro | null>(null)
+  const [usuarios, setUsuarios] = useState<UsuarioAdmin[]>([])
+  const [cursos, setCursos] = useState<Curso[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    Promise.all([
+      api.financeiro.adminOverview().catch(() => null),
+      api.admin.usuarios().catch(() => [] as any),
+      api.courses.listar().catch(() => [] as any),
+    ]).then(([fin, users, courses]) => {
+      setFinanceiro(fin as any)
+      setUsuarios(users as any)
+      setCursos(courses as any)
+    }).finally(() => setLoading(false))
+  }, [])
+
+  const totalUsuarios = usuarios.length
+  const cursosAtivos = cursos.length
+  const stats = financeiro ? [
+    { label: 'Usuários Totais', value: totalUsuarios.toLocaleString('pt-BR'), variacao: '+12%', icon: Users, color: 'text-isometrica-info', bg: 'bg-isometrica-info/10', up: true },
+    { label: 'Receita Mensal', value: `R$ ${financeiro.overview.mrr.toLocaleString('pt-BR')}`, variacao: `+${financeiro.overview.newSubscriptionsThisMonth}`, icon: DollarSign, color: 'text-isometrica-success', bg: 'bg-isometrica-success/10', up: true },
+    { label: 'Cursos Ativos', value: String(cursosAtivos), variacao: '+3', icon: BookOpen, color: 'text-isometrica-accent', bg: 'bg-isometrica-accent/10', up: true },
+    { label: 'Churn Rate', value: `${financeiro.overview.churnRate}%`, variacao: '-0.8%', icon: TrendingDown, color: 'text-isometrica-danger', bg: 'bg-isometrica-danger/10', up: false },
+  ] : []
+
+  const usuariosRecentes = usuarios.slice(0, 5).map((u) => ({
+    nome: u.name ?? 'Usuário',
+    email: u.email,
+    papel: u.role === 'ADMIN' ? 'Admin' : u.role === 'PROFESSOR' ? 'Professor' : 'Estudante',
+    data: new Date(u.createdAt).toLocaleDateString('pt-BR'),
+  }))
+
+  const planData = financeiro?.planDistribution ?? []
+  const maxPlanCount = Math.max(...planData.map(p => p.count), 1)
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-5">
@@ -84,19 +116,15 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <div className="grid gap-6 sm:grid-cols-3">
-            {[
-              { label: 'Gratuito', total: 1890, pct: 66, cor: 'bg-muted-foreground' },
-              { label: 'Premium', total: 892, pct: 31, cor: 'bg-isometrica-accent' },
-              { label: 'Admin/Professor', total: 65, pct: 3, cor: 'bg-isometrica-info' },
-            ].map((plano) => (
-              <div key={plano.label} className="text-center">
+            {planData.map((plano) => (
+              <div key={plano.name} className="text-center">
                 <div className="mx-auto mb-3 flex h-24 w-24 items-center justify-center rounded-full border-4 border-border">
                   <div>
-                    <p className="font-display text-xl font-bold">{plano.pct}%</p>
-                    <p className="text-[10px] text-muted-foreground">{plano.total}</p>
+                    <p className="font-display text-xl font-bold">{Math.round(plano.count / maxPlanCount * 100)}%</p>
+                    <p className="text-[10px] text-muted-foreground">{plano.count}</p>
                   </div>
                 </div>
-                <p className="text-sm font-semibold">{plano.label}</p>
+                <p className="text-sm font-semibold">{plano.name}</p>
               </div>
             ))}
           </div>
@@ -111,10 +139,10 @@ export default function AdminDashboardPage() {
           </div>
           <div className="space-y-4">
             {[
-              { label: 'Usuários Ativos (30d)', value: '1.892', pct: 66, cor: 'bg-isometrica-accent' },
-              { label: 'Novos Usuários (mês)', value: '347', pct: 12, cor: 'bg-isometrica-info' },
-              { label: 'Aulas Concluídas (mês)', value: '4.231', pct: 100, cor: 'bg-isometrica-success' },
-              { label: 'Receita Mensal Recorrente', value: 'R$ 22.450', pct: 79, cor: 'bg-isometrica-warning' },
+              { label: 'Usuários Ativos (30d)', value: String(financeiro?.overview.activeSubscriptions ?? 0), pct: Math.min(100, Math.round(((financeiro?.overview.activeSubscriptions ?? 0) / Math.max(totalUsuarios, 1)) * 100)), cor: 'bg-isometrica-accent' },
+              { label: 'Novos Usuários (mês)', value: String(financeiro?.overview.newSubscriptionsThisMonth ?? 0), pct: 12, cor: 'bg-isometrica-info' },
+              { label: 'Assinaturas Ativas', value: String(financeiro?.overview.activeSubscriptions ?? 0), pct: Math.min(100, Math.round(((financeiro?.overview.activeSubscriptions ?? 0) / Math.max(totalUsuarios, 1)) * 100)), cor: 'bg-isometrica-success' },
+              { label: 'Receita Mensal Recorrente', value: `R$ ${(financeiro?.overview.mrr ?? 0).toLocaleString('pt-BR')}`, pct: Math.min(100, Math.round(((financeiro?.overview.mrr ?? 0) / 50000) * 100)), cor: 'bg-isometrica-warning' },
             ].map((ind) => (
               <div key={ind.label}>
                 <div className="flex items-center justify-between text-sm">
@@ -141,21 +169,25 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <div className="space-y-1">
-            {usuariosRecentes.map((u) => (
-              <div key={u.email} className="flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-muted">
-                <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-isometrica-accent to-orange-400 text-xs font-bold text-white">
-                  {u.nome[0]}
+            {usuariosRecentes.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">Nenhum usuário encontrado</p>
+            ) : (
+              usuariosRecentes.map((u) => (
+                <div key={u.email} className="flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-muted">
+                  <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-isometrica-accent to-orange-400 text-xs font-bold text-white">
+                    {u.nome[0]}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold leading-tight">{u.nome}</p>
+                    <p className="text-[11px] text-muted-foreground">{u.email}</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-[9px] font-medium text-muted-foreground">{u.papel}</span>
+                    <p className="mt-0.5 text-[10px] text-muted-foreground">{u.data}</p>
+                  </div>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold leading-tight">{u.nome}</p>
-                  <p className="text-[11px] text-muted-foreground">{u.email}</p>
-                </div>
-                <div className="text-right">
-                  <span className="rounded-full bg-muted px-2 py-0.5 text-[9px] font-medium text-muted-foreground">{u.papel}</span>
-                  <p className="mt-0.5 text-[10px] text-muted-foreground">{u.data}</p>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
@@ -169,11 +201,11 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <div className="space-y-4">
-            {[
-              { label: 'Assinaturas Ativas', value: '892', variacao: '+23 este mês' },
-              { label: 'Receita Pendente', value: 'R$ 3.450', variacao: '12 faturas' },
-              { label: 'Ticket Médio', value: 'R$ 29,90', variacao: 'Premium' },
-              { label: 'MRR', value: 'R$ 22.450', variacao: '+8% vs mês passado' },
+            {financeiro ? [
+              { label: 'Assinaturas Ativas', value: String(financeiro.overview.activeSubscriptions), variacao: `+${financeiro.overview.newSubscriptionsThisMonth} este mês` },
+              { label: 'Receita Total', value: `R$ ${financeiro.overview.totalRevenue.toLocaleString('pt-BR')}`, variacao: `${financeiro.overview.totalSubscriptions} assinaturas` },
+              { label: 'Ticket Médio', value: financeiro.planDistribution.filter(p => p.price > 0).length > 0 ? `R$ ${(financeiro.overview.mrr / Math.max(financeiro.overview.activeSubscriptions, 1)).toFixed(2)}` : 'R$ 0', variacao: 'por assinante' },
+              { label: 'MRR', value: `R$ ${financeiro.overview.mrr.toLocaleString('pt-BR')}`, variacao: `+${financeiro.overview.newSubscriptionsThisMonth} novos` },
             ].map((f) => (
               <div key={f.label} className="flex items-center justify-between border-b border-border pb-3 last:border-0 last:pb-0">
                 <div>
@@ -182,7 +214,9 @@ export default function AdminDashboardPage() {
                 </div>
                 <span className="text-xs text-muted-foreground">{f.variacao}</span>
               </div>
-            ))}
+            )) : (
+              <p className="py-8 text-center text-sm text-muted-foreground">Nenhum dado financeiro</p>
+            )}
           </div>
         </div>
       </motion.div>

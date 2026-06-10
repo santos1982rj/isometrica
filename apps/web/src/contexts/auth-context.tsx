@@ -7,31 +7,23 @@ import type { Usuario } from '@/lib/types';
 
 interface AuthContextType {
   usuario: Usuario | null;
-  token: string | null;
   carregando: boolean;
   login: (email: string, senha: string) => Promise<void>;
   cadastro: (email: string, senha: string, nome?: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [usuario, setUsuario] = useState<Usuario | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    const stored = localStorage.getItem('token');
-    if (stored) {
-      setToken(stored);
-      api.auth.perfil().then(setUsuario).catch(() => {
-        localStorage.removeItem('token');
-      }).finally(() => setCarregando(false));
-    } else {
-      setCarregando(false);
-    }
+    api.auth.perfil().then(setUsuario).catch(() => {
+      setUsuario(null);
+    }).finally(() => setCarregando(false));
   }, []);
 
   function rotaInicial(role: string) {
@@ -44,8 +36,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (email: string, senha: string) => {
     const res = await api.auth.login({ email, senha });
-    localStorage.setItem('token', res.access_token);
-    setToken(res.access_token);
     const perfil = await api.auth.perfil();
     setUsuario(perfil);
     router.push(rotaInicial(perfil.role));
@@ -53,22 +43,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const cadastro = useCallback(async (email: string, senha: string, nome?: string) => {
     const res = await api.auth.cadastro({ email, senha, nome });
-    localStorage.setItem('token', res.access_token);
-    setToken(res.access_token);
     const perfil = await api.auth.perfil();
     setUsuario(perfil);
     router.push(rotaInicial(perfil.role));
   }, [router]);
 
-  const logout = useCallback(() => {
-    localStorage.removeItem('token');
-    setToken(null);
+  const logout = useCallback(async () => {
+    await api.auth.logout().catch(() => {});
     setUsuario(null);
-    router.push('/entrar');
+    router.push('/auth/login');
   }, [router]);
 
   return (
-    <AuthContext.Provider value={{ usuario, token, carregando, login, cadastro, logout }}>
+    <AuthContext.Provider value={{ usuario, carregando, login, cadastro, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, Res, Req } from '@nestjs/common';
+import { Response, Request } from 'express';
 import { AuthService } from './auth.service';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
@@ -7,20 +8,32 @@ import { RecuperarSenhaDto } from './dto/recuperar-senha.dto';
 import { Public } from './decorators/public.decorator';
 import { CurrentUser } from './decorators/current-user.decorator';
 
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax' as const,
+  path: '/',
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+};
+
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Public()
   @Post('cadastro')
-  cadastro(@Body() dto: SignupDto) {
-    return this.authService.cadastro(dto);
+  async cadastro(@Body() dto: SignupDto, @Res({ passthrough: true }) res: Response) {
+    const result = await this.authService.cadastro(dto);
+    res.cookie('token', result.access_token, COOKIE_OPTIONS);
+    return result;
   }
 
   @Public()
   @Post('login')
-  login(@Body() dto: LoginDto) {
-    return this.authService.login(dto);
+  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
+    const result = await this.authService.login(dto);
+    res.cookie('token', result.access_token, COOKIE_OPTIONS);
+    return result;
   }
 
   @Public()
@@ -38,5 +51,12 @@ export class AuthController {
   @Get('perfil')
   perfil(@CurrentUser('id') usuarioId: string) {
     return this.authService.perfil(usuarioId);
+  }
+
+  @Public()
+  @Post('logout')
+  logout(@Res({ passthrough: true }) res: Response) {
+    res.clearCookie('token', { path: '/' });
+    return { mensagem: 'Sessão encerrada' };
   }
 }

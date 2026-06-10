@@ -27,6 +27,7 @@ import {
   AlertTriangle,
   CheckCircle,
   Star,
+  Loader2,
 } from 'lucide-react'
 
 const container = {
@@ -40,27 +41,6 @@ const itemAnim = {
   hidden: { opacity: 0, y: 16 },
   show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] as const } },
 }
-
-const mockKpis = [
-  { label: 'XP Total', value: '2.450', icon: Zap, color: 'text-isometrica-accent', bg: 'bg-isometrica-accent/10' },
-  { label: 'Streak', value: '7 dias', icon: Flame, color: 'text-isometrica-accent', bg: 'bg-isometrica-accent/10' },
-  { label: 'Nível', value: '8', icon: Trophy, color: 'text-isometrica-info', bg: 'bg-isometrica-info/10' },
-  { label: 'Cursos Ativos', value: '4', icon: BookOpen, color: 'text-isometrica-success', bg: 'bg-isometrica-success/10' },
-]
-
-const mockSubjects = [
-  { name: 'Resistência dos Materiais', desc: 'Flexão, Torção, Flambagem', pct: 58, char: 'R', color: 'text-isometrica-accent', bg: 'bg-isometrica-accent/10', barColor: 'bg-isometrica-accent' },
-  { name: 'Cálculo III', desc: 'Derivadas Parciais, Integrais Múltiplas', pct: 82, char: 'C', color: 'text-isometrica-success', bg: 'bg-isometrica-success/10', barColor: 'bg-isometrica-success' },
-  { name: 'Concreto Armado', desc: 'Vigas, Lajes, Pilares', pct: 31, char: 'C', color: 'text-isometrica-danger', bg: 'bg-isometrica-danger/10', barColor: 'bg-isometrica-danger' },
-  { name: 'Geotecnia', desc: 'Tensões no Solo, Compressibilidade', pct: 45, char: 'G', color: 'text-isometrica-warning', bg: 'bg-isometrica-warning/10', barColor: 'bg-isometrica-warning' },
-]
-
-const mockActivity = [
-  { title: 'Concluiu "Diagrama de Momento Fletor"', time: 'Há 2 horas', color: 'bg-isometrica-accent' },
-  { title: 'Acertou 8/10 em Derivadas Parciais', time: 'Há 5 horas', color: 'bg-isometrica-success' },
-  { title: 'Tutor IA: "Tensão normal x cisalhante"', time: 'Ontem às 20:34', color: 'bg-isometrica-info' },
-  { title: 'Iniciou "Lajes de Concreto Armado"', time: 'Ontem às 14:10', color: 'bg-muted-foreground' },
-]
 
 const mockRecommendations = [
   { icon: AlertTriangle, emojiBg: 'bg-isometrica-accent/10', title: 'Concreto Armado crítico', desc: '70% de erro em Lajes. Revisar conteúdo.', meta: 'Últimas 15 tentativas', action: 'Revisar' },
@@ -86,21 +66,95 @@ export default function DashboardPage() {
   const { usuario } = useAuth()
   const [nextLessons, setNextLessons] = useState<any[]>([])
   const [topicsToReview, setTopicsToReview] = useState<any[]>([])
-  const [loadingNext, setLoadingNext] = useState(true)
+  const [profileData, setProfileData] = useState<any>(null)
+  const [proficiencia, setProficiencia] = useState<any[]>([])
+  const [eventos, setEventos] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (usuario) {
-      api.learning.proximasAulas(usuario.id).then((data) => {
-        setNextLessons(data.nextLessons ?? [])
-        setTopicsToReview(data.topicsToReview ?? [])
-      }).catch(() => {}).finally(() => setLoadingNext(false))
-    }
+    if (!usuario) return
+    setLoading(true)
+    Promise.all([
+      api.learning.proximasAulas(usuario.id).catch(() => ({ nextLessons: [], topicsToReview: [] })),
+      api.profile.me().catch(() => null),
+      api.learning.modelo(usuario.id).catch(() => []),
+      api.analytics.eventos(usuario.id).catch(() => []),
+    ]).then(([lessons, profile, modelo, events]) => {
+      setNextLessons((lessons as any).nextLessons ?? [])
+      setTopicsToReview((lessons as any).topicsToReview ?? [])
+      setProfileData(profile)
+      setProficiencia(modelo as any[])
+      setEventos(events as any[])
+    }).finally(() => setLoading(false))
   }, [usuario])
 
-  const profMedia = 55
+  const gamification = profileData?.gamification
+  const stats = profileData?.stats
+  const enrollments = profileData?.enrollments ?? []
 
-  const topicosCriticos = 1
-  const topicosDominados = 1
+  const kpis = gamification ? ([
+    { label: 'XP Total', value: (gamification.xp ?? 0).toLocaleString('pt-BR'), icon: Zap, color: 'text-isometrica-accent', bg: 'bg-isometrica-accent/10' },
+    { label: 'Streak', value: `${gamification.streak ?? 0} dias`, icon: Flame, color: 'text-isometrica-accent', bg: 'bg-isometrica-accent/10' },
+    { label: 'Nível', value: String(gamification.level ?? 0), icon: Trophy, color: 'text-isometrica-info', bg: 'bg-isometrica-info/10' },
+    { label: 'Cursos Ativos', value: String(enrollments.length), icon: BookOpen, color: 'text-isometrica-success', bg: 'bg-isometrica-success/10' },
+  ]) : [
+    { label: 'XP Total', value: '0', icon: Zap, color: 'text-isometrica-accent', bg: 'bg-isometrica-accent/10' },
+    { label: 'Streak', value: '0 dias', icon: Flame, color: 'text-isometrica-accent', bg: 'bg-isometrica-accent/10' },
+    { label: 'Nível', value: '0', icon: Trophy, color: 'text-isometrica-info', bg: 'bg-isometrica-info/10' },
+    { label: 'Cursos Ativos', value: String(enrollments.length), icon: BookOpen, color: 'text-isometrica-success', bg: 'bg-isometrica-success/10' },
+  ]
+
+  const subjects = proficiencia.reduce<{ name: string; desc: string; pct: number; char: string; color: string; bg: string; barColor: string }[]>((acc, item) => {
+    const subjectName = (item.topic?.subject as any)?.name ?? item.topic?.name ?? 'Geral'
+    const existing = acc.find(s => s.name === subjectName)
+    const pct = Math.round((item.proficiency ?? 0) * 100)
+    if (existing) {
+      existing.pct = Math.round((existing.pct + pct) / 2)
+    } else {
+      const colors = [
+        { color: 'text-isometrica-accent', bg: 'bg-isometrica-accent/10', barColor: 'bg-isometrica-accent' },
+        { color: 'text-isometrica-success', bg: 'bg-isometrica-success/10', barColor: 'bg-isometrica-success' },
+        { color: 'text-isometrica-danger', bg: 'bg-isometrica-danger/10', barColor: 'bg-isometrica-danger' },
+        { color: 'text-isometrica-warning', bg: 'bg-isometrica-warning/10', barColor: 'bg-isometrica-warning' },
+      ]
+      const style = colors[acc.length % colors.length]
+      acc.push({ name: subjectName, desc: '', pct, char: subjectName[0], ...style })
+    }
+    return acc
+  }, [])
+
+  const activityEvents = eventos.slice(0, 4).map((e: any) => {
+    const labels: Record<string, string> = {
+      LESSON_COMPLETED: 'Concluiu uma aula',
+      QUESTION_CORRECT: 'Acertou uma questão',
+      QUESTION_INCORRECT: 'Errou uma questão',
+      CONVERSATION_STARTED: 'Iniciou conversa com Tutor IA',
+      ENROLLMENT_CREATED: 'Matriculou-se em um curso',
+      ACHIEVEMENT_UNLOCKED: 'Desbloqueou uma conquista',
+      LEVEL_UP: 'Subiu de nível',
+      STREAK_UPDATED: 'Streak atualizado',
+    }
+    return {
+      title: labels[e.type] ?? e.type,
+      time: new Date(e.createdAt).toLocaleString('pt-BR'),
+      color: e.type === 'QUESTION_INCORRECT' ? 'bg-isometrica-danger' : e.type === 'QUESTION_CORRECT' ? 'bg-isometrica-success' : 'bg-isometrica-accent',
+    }
+  })
+
+  const profMedia = proficiencia.length > 0
+    ? Math.round(proficiencia.reduce((s, i) => s + (i.proficiency ?? 0), 0) / proficiencia.length * 100)
+    : stats?.accuracy ?? 55
+
+  const topicosCriticos = proficiencia.filter(i => (i.proficiency ?? 0) < 0.4).length
+  const topicosDominados = proficiencia.filter(i => (i.proficiency ?? 0) >= 0.7).length
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-5">
@@ -110,7 +164,10 @@ export default function DashboardPage() {
             {getGreeting()}, <span className="text-isometrica-accent">{usuario?.name?.split(' ')[0] ?? 'Estudante'}</span>
           </h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            4 de 7 dias esta semana &mdash; <span className="font-medium text-isometrica-success">12% acima</span> da semana passada
+            {gamification?.streak ? `${gamification.streak} de 7 dias esta semana` : 'Comece sua jornada'} &mdash;{' '}
+            <span className="font-medium text-isometrica-success">
+              {stats?.accuracy ? `${stats.accuracy}% de acertos` : 'Bem-vindo!'}
+            </span>
           </p>
         </div>
         <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-0.5">
@@ -129,7 +186,7 @@ export default function DashboardPage() {
 
       <motion.div variants={itemAnim} className="rounded-xl border border-border bg-card p-5">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {mockKpis.map((kpi) => (
+          {kpis.map((kpi) => (
             <div
               key={kpi.label}
               className="flex items-center gap-3 rounded-lg bg-muted/50 p-3 transition-colors hover:bg-muted"
@@ -163,19 +220,7 @@ export default function DashboardPage() {
             </Link>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
-            {loadingNext ? (
-              [1, 2, 3, 4].map((i) => (
-                <div key={i} className="flex items-start gap-3 animate-pulse">
-                  <div className="size-10 rounded-lg bg-muted" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-3 w-24 rounded bg-muted" />
-                    <div className="h-4 w-3/4 rounded bg-muted" />
-                    <div className="h-3 w-16 rounded bg-muted" />
-                    <div className="h-1.5 w-full rounded bg-muted" />
-                  </div>
-                </div>
-              ))
-            ) : nextLessons.length === 0 ? (
+            {nextLessons.length === 0 ? (
               <p className="col-span-2 py-8 text-center text-sm text-muted-foreground">
                 <span className="inline-flex items-center gap-1">Todos os cursos concluídos! <Sparkles className="size-3 text-isometrica-accent" /></span>
               </p>
@@ -256,29 +301,33 @@ export default function DashboardPage() {
           <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
             <DonutChart value={profMedia} label="Geral" />
             <div className="flex flex-1 flex-col gap-0">
-              {mockSubjects.map((subj) => (
-                <div key={subj.name} className="flex items-center gap-3 py-2">
-                  <div className={`flex size-6 shrink-0 items-center justify-center rounded-md ${subj.bg}`}>
-                    <span className={`text-[10px] font-bold ${subj.color}`}>{subj.char}</span>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold">{subj.name}</span>
-                      <span className={`text-xs font-bold tabular-nums ${subj.color}`}>{subj.pct}%</span>
+              {subjects.length === 0 ? (
+                <p className="py-4 text-center text-sm text-muted-foreground">Nenhum dado de proficiência disponível</p>
+              ) : (
+                subjects.map((subj) => (
+                  <div key={subj.name} className="flex items-center gap-3 py-2">
+                    <div className={`flex size-6 shrink-0 items-center justify-center rounded-md ${subj.bg}`}>
+                      <span className={`text-[10px] font-bold ${subj.color}`}>{subj.char}</span>
                     </div>
-                    <p className="text-[10px] text-muted-foreground">{subj.desc}</p>
-                    <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
-                      <motion.div
-                        className={`h-full rounded-full ${subj.barColor}`}
-                        initial={{ width: 0 }}
-                        whileInView={{ width: `${subj.pct}%` }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.8, delay: 0.1, ease: 'easeOut' }}
-                      />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold">{subj.name}</span>
+                        <span className={`text-xs font-bold tabular-nums ${subj.color}`}>{subj.pct}%</span>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">{subj.desc}</p>
+                      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
+                        <motion.div
+                          className={`h-full rounded-full ${subj.barColor}`}
+                          initial={{ width: 0 }}
+                          whileInView={{ width: `${subj.pct}%` }}
+                          viewport={{ once: true }}
+                          transition={{ duration: 0.8, delay: 0.1, ease: 'easeOut' }}
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
           <div className="mt-3 flex items-center gap-4 border-t border-border pt-3 text-xs text-muted-foreground">
@@ -290,7 +339,7 @@ export default function DashboardPage() {
             <div className="flex items-center gap-1.5">
               <span className="size-2 rounded-full bg-isometrica-accent" />
               <span>Médio (40-70%)</span>
-              <span className="font-semibold text-foreground">2</span>
+              <span className="font-semibold text-foreground">{proficiencia.length - topicosCriticos - topicosDominados}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="size-2 rounded-full bg-isometrica-danger" />
@@ -310,18 +359,22 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="flex flex-col gap-0">
-            {mockActivity.map((act, i) => (
-              <div key={act.title} className="flex items-start gap-3 py-2.5">
-                <div className="flex flex-col items-center gap-0.5 pt-1">
-                  <div className={`size-2 rounded-full ${act.color} ${i === 0 ? 'animate-pulse' : ''}`} />
-                  {i < mockActivity.length - 1 && <div className="mt-0.5 h-full w-0.5 bg-border" />}
+            {activityEvents.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">Nenhuma atividade recente</p>
+            ) : (
+              activityEvents.map((act, i) => (
+                <div key={act.title} className="flex items-start gap-3 py-2.5">
+                  <div className="flex flex-col items-center gap-0.5 pt-1">
+                    <div className={`size-2 rounded-full ${act.color} ${i === 0 ? 'animate-pulse' : ''}`} />
+                    {i < activityEvents.length - 1 && <div className="mt-0.5 h-full w-0.5 bg-border" />}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium leading-snug">{act.title}</p>
+                    <p className="mt-0.5 text-[10px] text-muted-foreground">{act.time}</p>
+                  </div>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-medium leading-snug">{act.title}</p>
-                  <p className="mt-0.5 text-[10px] text-muted-foreground">{act.time}</p>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </motion.div>
 
