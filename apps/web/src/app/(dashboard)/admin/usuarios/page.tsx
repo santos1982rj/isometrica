@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
-import { api } from '@/lib/api'
+import { useAdminUsuarios, useUpdateUser, useDeleteUser } from '@/lib/queries'
+import type { UsuarioAdmin } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
 import { Pagination } from '@/components/pagination'
 import { ListSkeleton, StatSkeleton } from '@/components/skeleton-loading'
@@ -29,25 +30,18 @@ const papelColor: Record<Papel, string> = {
 }
 
 export default function AdminUsuariosPage() {
-  const [usuarios, setUsuarios] = useState<any[]>([])
-  const [carregando, setCarregando] = useState(true)
+  const { data: usuarios = [], isLoading: carregando } = useAdminUsuarios()
+  const updateUser = useUpdateUser()
+  const deleteUser = useDeleteUser()
   const [busca, setBusca] = useState('')
   const [editandoId, setEditandoId] = useState<string | null>(null)
   const [novoPapel, setNovoPapel] = useState<Papel>('STUDENT')
   const ITENS_POR_PAGINA = 10
   const [paginaAtual, setPaginaAtual] = useState(1)
 
-  function carregar() {
-    setCarregando(true)
-    api.admin.usuarios().then(setUsuarios).catch(console.error).finally(() => setCarregando(false))
-  }
-
-  useEffect(() => { carregar() }, [])
-
   async function mudarPapel(userId: string, papel: Papel) {
     try {
-      await api.admin.atualizarUsuario(userId, { role: papel })
-      carregar()
+      await updateUser.mutateAsync({ id: userId, data: { role: papel } })
       setEditandoId(null)
     } catch { toast.error('Erro ao atualizar usuário') }
   }
@@ -55,8 +49,7 @@ export default function AdminUsuariosPage() {
   async function remover(userId: string, nome: string) {
     if (!confirm(`Remover ${nome}? Esta ação não pode ser desfeita.`)) return
     try {
-      await api.admin.removerUsuario(userId)
-      carregar()
+      await deleteUser.mutateAsync(userId)
     } catch { toast.error('Erro ao remover usuário') }
   }
 

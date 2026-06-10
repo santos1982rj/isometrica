@@ -59,6 +59,7 @@ export interface Aula {
     name: string
     course: { id: string; name: string; subject?: { id: string; name: string } | null }
   }
+  professor?: { name?: string | null; title?: string | null; lattes?: string | null; linkedin?: string | null } | null
   prevLessonId?: string | null
   nextLessonId?: string | null
   moduleLessons?: Aula[]

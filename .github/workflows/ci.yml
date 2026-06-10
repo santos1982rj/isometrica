@@ -22,7 +22,7 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 11.3.0
+          version: 11.5.2
 
       - uses: actions/setup-node@v4
         with:
@@ -31,20 +31,16 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: TypeScript check (API)
-        run: pnpm --filter @isometrica/api exec tsc --noEmit
-
-      - name: TypeScript check (Web)
-        run: pnpm --filter @isometrica/web exec tsc --noEmit
-
-      - name: Lint
-        run: pnpm lint
-        continue-on-error: true
-
       - name: Prisma validate
         run: pnpm --filter @isometrica/api exec prisma validate
         env:
           DATABASE_URL: "postgresql://placeholder:placeholder@localhost:5432/placeholder"
+
+      - name: TypeScript check
+        run: pnpm turbo typecheck
+
+      - name: Lint
+        run: pnpm lint
 
       - name: Build
         run: pnpm build

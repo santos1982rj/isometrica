@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { api } from '@/lib/api'
+import { useErrors, useClearErrors, useSubmitAttempt } from '@/lib/queries'
 import { useAuth } from '@/contexts/auth-context'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
+import type { Questao } from '@/lib/types'
 import {
   AlertTriangle,
   RefreshCw,
@@ -17,6 +18,11 @@ import {
   BarChart3,
   ChevronRight,
 } from 'lucide-react'
+
+interface ErrorEntry {
+  id: string
+  question: Questao
+}
 
 const container = {
   hidden: {},
@@ -30,40 +36,32 @@ const item = {
 
 export default function ErrosPage() {
   const { usuario } = useAuth()
-  const [erros, setErros] = useState<any[]>([])
-  const [carregando, setCarregando] = useState(true)
+  const { data: erros = [], isLoading: carregando } = useErrors(usuario?.id ?? '') as { data: ErrorEntry[] | undefined; isLoading: boolean; isError: boolean }
+  const { mutateAsync: limparErros } = useClearErrors()
+  const { mutate: enviarTentativa } = useSubmitAttempt()
   const [expandido, setExpandido] = useState<string | null>(null)
   const [refazendo, setRefazendo] = useState<Record<string, string>>({})
   const [mostrarFeedback, setMostrarFeedback] = useState<Record<string, boolean>>({})
 
-  function carregar() {
-    if (!usuario) return
-    setCarregando(true)
-    api.learning.erros(usuario.id).then(setErros).catch(console.error).finally(() => setCarregando(false))
-  }
-
-  useEffect(() => { carregar() }, [usuario])
-
   async function limpar() {
     if (!usuario || !confirm('Limpar histórico de erros?')) return
-    await api.learning.limparErros(usuario.id)
-    setErros([])
+    await limparErros(usuario.id)
   }
 
   function responder(questionId: string, alternativeId: string) {
     setRefazendo((prev) => ({ ...prev, [questionId]: alternativeId }))
   }
 
-  function conferir(err: any) {
+  function conferir(err: ErrorEntry) {
     const esc = refazendo[err.question.id]
     if (!esc) return
     setMostrarFeedback((prev) => ({ ...prev, [err.question.id]: true }))
     if (usuario) {
-      const correta = err.question.alternatives.find((a: any) => a.isCorrect)
-      api.learning.enviarTentativa({
+      const correta = err.question.alternatives.find((a) => a.isCorrect)
+      enviarTentativa({
         userId: usuario.id, questionId: err.question.id, selectedId: esc,
         correct: esc === correta?.id,
-      }).catch(() => {})
+      })
     }
   }
 
@@ -110,7 +108,7 @@ export default function ErrosPage() {
           <motion.div variants={item} className="space-y-5 lg:col-span-3">
             {erros.map((err) => {
               const q = err.question
-              const correta = q.alternatives.find((a: any) => a.isCorrect)
+              const correta = q.alternatives.find((a) => a.isCorrect)
               const esc = refazendo[q.id]
               const feedback = mostrarFeedback[q.id]
               const acertou = feedback && esc === correta?.id
@@ -147,7 +145,7 @@ export default function ErrosPage() {
                   {expandido === q.id && (
                     <div className="mt-4 space-y-2 border-t border-border pt-4">
                       <p className="text-xs font-semibold text-muted-foreground">Tente novamente:</p>
-                      {q.alternatives.map((alt: any) => {
+                      {q.alternatives.map((alt) => {
                         let classe = 'border-border hover:bg-muted/50'
                         if (feedback) {
                           if (alt.isCorrect) classe = 'border-isometrica-success/50 bg-isometrica-success/[0.03]'

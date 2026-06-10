@@ -4,21 +4,18 @@ import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
+import { useConversations, useConversation, useCreateConversation, useSendMessage } from '@/lib/queries';
+import { useQueryClient } from '@tanstack/react-query';
+import type { Mensagem, Conversa } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Bot, User, Send, Sparkles } from 'lucide-react';
 
-interface Mensagem {
-  id: string;
-  role: string;
-  content: string;
-  createdAt: string;
-}
-
 function TutorContent() {
   const { usuario } = useAuth();
   const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
   const [conversaId, setConversaId] = useState<string | null>(null);
   const [mensagens, setMensagens] = useState<Mensagem[]>([]);
   const [input, setInput] = useState(searchParams.get('pergunta') ?? '');
@@ -27,21 +24,39 @@ function TutorContent() {
   const [carregando, setCarregando] = useState(true);
   const fimRef = useRef<HTMLDivElement>(null);
 
+  const { data: conversasList } = useConversations(usuario?.id ?? '');
+  const { data: conversaData } = useConversation(conversaId ?? '');
+  const createConversation = useCreateConversation();
+  const sendMessage = useSendMessage();
+
+  // Set initial conversation ID from list
   useEffect(() => {
-    if (!usuario) return;
-    api.ai.conversas(usuario.id).then(async (conversas) => {
-      if (conversas.length > 0) {
-        const ultima = conversas[0];
-        setConversaId(ultima.id);
-        const dados = await api.ai.obterConversa(ultima.id);
-        setMensagens(dados.messages ?? []);
+    if (conversasList && conversasList.length > 0 && !conversaId) {
+      setConversaId(conversasList[0].id);
+    }
+  }, [conversasList, conversaId]);
+
+  // Sync messages when conversation data loads/changes and not sending
+  useEffect(() => {
+    if (conversaData?.messages && !enviando) {
+      setMensagens(conversaData.messages as Mensagem[]);
+    }
+  }, [conversaData, enviando]);
+
+  // Handle loading state based on query data availability
+  useEffect(() => {
+    if (conversasList) {
+      if (conversasList.length === 0) {
+        setCarregando(false);
+      } else if (conversaId && conversaData) {
+        setCarregando(false);
       }
-    }).catch(console.error).finally(() => setCarregando(false));
-  }, [usuario]);
+    }
+  }, [conversasList, conversaId, conversaData]);
 
   useEffect(() => {
     fimRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [mensagens]);
+  }, [mensagens, streamContent]);
 
   async function enviar() {
     if (!input.trim() || !usuario || enviando) return;
@@ -61,12 +76,12 @@ function TutorContent() {
     try {
       let id = conversaId;
       if (!id) {
-        const conv = await api.ai.criarConversa(usuario.id, 'Dúvida - ' + texto.slice(0, 40));
+        const conv = await createConversation.mutateAsync({ userId: usuario.id, title: 'Dúvida - ' + texto.slice(0, 40) });
         id = conv.id;
         setConversaId(id);
       }
 
-      await api.ai.enviarMensagem(id!, 'user', texto);
+      await sendMessage.mutateAsync({ conversationId: id!, role: 'user', content: texto });
 
       // Inicia streaming via proxy Next.js (cookie httpOnly enviado automaticamente)
       const msgId = crypto.randomUUID();

@@ -1,7 +1,8 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useCallback, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import type { Usuario } from '@/lib/types';
 
@@ -16,49 +17,69 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [usuario, setUsuario] = useState<Usuario | null>(null);
-  const [carregando, setCarregando] = useState(true);
   const router = useRouter();
+  const qc = useQueryClient();
 
-  useEffect(() => {
-    api.auth.perfil().then(setUsuario).catch(() => {
-      setUsuario(null);
-    }).finally(() => setCarregando(false));
-  }, []);
+  const { data: usuario, isLoading: carregando } = useQuery<Usuario | null>({
+    queryKey: ['auth', 'perfil'],
+    queryFn: () => api.auth.perfil().catch(() => null),
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
 
-  function rotaInicial(role: string) {
-    switch (role) {
-      case 'PROFESSOR': return '/professor/dashboard';
-      case 'ADMIN': return '/admin/dashboard';
-      default: return '/dashboard';
-    }
-  }
+  const loginMutation = useMutation({
+    mutationFn: ({ email, senha }: { email: string; senha: string }) =>
+      api.auth.login({ email, senha }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['auth', 'perfil'] });
+      const perfil = qc.getQueryData<Usuario>(['auth', 'perfil']);
+      if (perfil) router.push(rotaInicial(perfil.role));
+    },
+  });
+
+  const cadastroMutation = useMutation({
+    mutationFn: ({ email, senha, nome }: { email: string; senha: string; nome?: string }) =>
+      api.auth.cadastro({ email, senha, nome }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['auth', 'perfil'] });
+      const perfil = qc.getQueryData<Usuario>(['auth', 'perfil']);
+      if (perfil) router.push(rotaInicial(perfil.role));
+    },
+  });
+
+  const logoutMutation = useMutation({
+    mutationFn: () => api.auth.logout(),
+    onSuccess: () => {
+      qc.clear();
+      router.push('/entrar');
+    },
+  });
 
   const login = useCallback(async (email: string, senha: string) => {
-    const res = await api.auth.login({ email, senha });
-    const perfil = await api.auth.perfil();
-    setUsuario(perfil);
-    router.push(rotaInicial(perfil.role));
-  }, [router]);
+    await loginMutation.mutateAsync({ email, senha });
+  }, [loginMutation]);
 
   const cadastro = useCallback(async (email: string, senha: string, nome?: string) => {
-    const res = await api.auth.cadastro({ email, senha, nome });
-    const perfil = await api.auth.perfil();
-    setUsuario(perfil);
-    router.push(rotaInicial(perfil.role));
-  }, [router]);
+    await cadastroMutation.mutateAsync({ email, senha, nome });
+  }, [cadastroMutation]);
 
   const logout = useCallback(async () => {
-    await api.auth.logout().catch(() => {});
-    setUsuario(null);
-    router.push('/entrar');
-  }, [router]);
+    await logoutMutation.mutateAsync();
+  }, [logoutMutation]);
 
   return (
-    <AuthContext.Provider value={{ usuario, carregando, login, cadastro, logout }}>
+    <AuthContext.Provider value={{ usuario: usuario ?? null, carregando, login, cadastro, logout }}>
       {children}
     </AuthContext.Provider>
   );
+}
+
+function rotaInicial(role: string) {
+  switch (role) {
+    case 'PROFESSOR': return '/professor/dashboard';
+    case 'ADMIN': return '/admin/dashboard';
+    default: return '/dashboard';
+  }
 }
 
 export function useAuth() {

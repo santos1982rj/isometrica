@@ -1,16 +1,26 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { api } from '@/lib/api'
 import { useAuth } from '@/contexts/auth-context'
+import { useQuestions, useSubjectTree, useQuestionStats, useTopicMastery } from '@/lib/queries'
+import type { Questao, QuestionTreeItem, QuestionStats, TopicMastery } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Pagination } from '@/components/pagination'
 import {
   Search, Filter, ChevronRight, ChevronDown, BookOpen, BarChart3, Clock, CheckCircle,
-  XCircle,   Sparkles, GraduationCap, Target, ChevronLeft, FileQuestion, Brain, Lightbulb,
+  XCircle, Sparkles, GraduationCap, Target, ChevronLeft, FileQuestion, Brain, Lightbulb,
 } from 'lucide-react'
+
+type ExtendedQuestao = Questao & {
+  exam?: { id: string; name: string } | null
+  estimatedTime?: number
+  tags: { id: string; tag: string }[]
+}
+type ExtendedQuestionStats = QuestionStats & { avgTimeSeconds?: number }
+type ExtendedTopicMastery = TopicMastery & { isMastered?: boolean; consecutiveCorrect?: number; targetToMaster?: number }
+type ExtendedTreeItem = Omit<QuestionTreeItem, 'children'> & { totalQuestions?: number; children: { id: string; name: string; count: number }[] }
 
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.03 } } }
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] as const } } }
@@ -21,59 +31,36 @@ const diffColor: Record<string, string> = { FACIL: 'text-isometrica-success bg-i
 
 export default function BancoQuestoesPage() {
   const { usuario } = useAuth()
-  const [questoes, setQuestoes] = useState<any[]>([])
-  const [carregando, setCarregando] = useState(true)
-  const [total, setTotal] = useState(0)
-  const [pagina, setPagina] = useState(1)
-  const [totalPaginas, setTotalPaginas] = useState(1)
 
-  // Filters
   const [busca, setBusca] = useState('')
-  const [arvore, setArvore] = useState<any[]>([])
+  const [searchTerm, setSearchTerm] = useState('')
   const [topicSelecionado, setTopicSelecionado] = useState('')
   const [dificuldade, setDificuldade] = useState('')
   const [arvoreAberta, setArvoreAberta] = useState<Record<string, boolean>>({})
+  const [pagina, setPagina] = useState(1)
+  const [questaoSelecionada, setQuestaoSelecionada] = useState<Questao | null>(null)
 
-  // Stats / Mastery
-  const [questaoSelecionada, setQuestaoSelecionada] = useState<any>(null)
-  const [statsQuestao, setStatsQuestao] = useState<any>(null)
-  const [dominio, setDominio] = useState<any>(null)
+  const params: Record<string, string> = { page: String(pagina), limit: '15' }
+  if (searchTerm) params.search = searchTerm
+  if (topicSelecionado) params.topicId = topicSelecionado
+  if (dificuldade) params.difficulty = dificuldade
 
-  async function carregar(page = 1) {
-    setCarregando(true)
-    try {
-      const params: Record<string, string> = { page: String(page), limit: '15' }
-      if (busca) params.search = busca
-      if (topicSelecionado) params.topicId = topicSelecionado
-      if (dificuldade) params.difficulty = dificuldade
+  const { data: questionsResponse, isLoading: carregando } = useQuestions(params)
+  const { data: rawArvore = [] } = useSubjectTree()
+  const { data: rawStats } = useQuestionStats(questaoSelecionada?.id ?? '')
+  const { data: rawDominio } = useTopicMastery(usuario && questaoSelecionada ? questaoSelecionada.topicId : '')
 
-      const res = await api.questions.listar(params)
-      setQuestoes(res.data)
-      setTotal(res.total)
-      setPagina(res.page)
-      setTotalPaginas(res.totalPages)
-    } catch {} finally { setCarregando(false) }
-  }
+  const questoes = (questionsResponse?.data ?? []) as ExtendedQuestao[]
+  const total = questionsResponse?.total ?? 0
+  const totalPaginas = questionsResponse?.totalPages ?? 1
+  const arvore = rawArvore as unknown as ExtendedTreeItem[]
+  const statsQuestao = rawStats as ExtendedQuestionStats | undefined
+  const dominio = rawDominio as ExtendedTopicMastery | undefined
 
-  useEffect(() => {
-    api.questions.arvore().then(setArvore).catch(() => {})
-    carregar()
-  }, [])
+  useEffect(() => { setPagina(1) }, [topicSelecionado, dificuldade, searchTerm])
 
-  useEffect(() => { carregar() }, [topicSelecionado, dificuldade])
-
-  async function verQuestao(q: any) {
+  function verQuestao(q: Questao) {
     setQuestaoSelecionada(q)
-    setStatsQuestao(null)
-    setDominio(null)
-    try {
-      const [s, d] = await Promise.all([
-        api.questions.stats(q.id),
-        usuario ? api.questions.dominio(q.topicId).catch(() => null) : null,
-      ])
-      setStatsQuestao(s)
-      setDominio(d)
-    } catch {}
   }
 
   const toggleArvore = (id: string) => setArvoreAberta((p) => ({ ...p, [id]: !p[id] }))
@@ -91,7 +78,7 @@ export default function BancoQuestoesPage() {
           {/* Busca */}
           <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 transition-all focus-within:border-isometrica-accent">
             <Search className="size-4 shrink-0 text-muted-foreground" />
-            <input value={busca} onChange={(e) => setBusca(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && carregar()}
+            <input value={busca} onChange={(e) => setBusca(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { setSearchTerm(busca); setPagina(1) } }}
               placeholder="Buscar questões..." className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground" />
           </div>
 
@@ -109,7 +96,7 @@ export default function BancoQuestoesPage() {
           <div className="rounded-xl border border-border bg-card p-4">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Disciplinas</h3>
             <div className="space-y-1">
-              {arvore.map((s: any) => (
+              {arvore.map((s) => (
                 <div key={s.id}>
                   <button onClick={() => toggleArvore(s.id)}
                     className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs font-medium transition-colors hover:bg-muted/50">
@@ -120,7 +107,7 @@ export default function BancoQuestoesPage() {
                   </button>
                   {arvoreAberta[s.id] && (
                     <div className="ml-4 space-y-0.5 mt-0.5">
-                      {s.children.map((t: any) => (
+                      {s.children.map((t) => (
                         <button key={t.id} onClick={() => setTopicSelecionado(topicSelecionado === t.id ? '' : t.id)}
                           className={cn('flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[11px] transition-colors',
                             topicSelecionado === t.id ? 'bg-isometrica-accent/10 text-isometrica-accent font-semibold' : 'text-muted-foreground hover:bg-muted/50')}>
@@ -174,7 +161,7 @@ export default function BancoQuestoesPage() {
                         </div>
                         {q.tags?.length > 0 && (
                           <div className="mt-1 flex flex-wrap gap-1">
-                            {q.tags.map((t: any) => (
+                            {q.tags.map((t) => (
                               <span key={t.id} className="rounded bg-muted/50 px-1.5 py-0.5 text-[8px] text-muted-foreground">#{t.tag}</span>
                             ))}
                           </div>
@@ -188,7 +175,7 @@ export default function BancoQuestoesPage() {
                       <div className="mt-4 border-t border-border pt-4 space-y-4">
                         {/* Alternativas */}
                         <div className="space-y-1.5">
-                          {q.alternatives?.map((alt: any, i: number) => (
+                          {q.alternatives?.map((alt, i: number) => (
                             <div key={alt.id} className={cn('flex items-center gap-3 rounded-lg border px-3 py-2.5 text-sm', alt.isCorrect ? 'border-isometrica-success/40 bg-isometrica-success/[0.02]' : 'border-border')}>
                               <span className={cn('flex size-6 shrink-0 items-center justify-center rounded-full text-[10px] font-medium border', alt.isCorrect ? 'border-isometrica-success bg-isometrica-success text-white' : 'border-border text-muted-foreground')}>
                                 {String.fromCharCode(65 + i)}
@@ -241,7 +228,7 @@ export default function BancoQuestoesPage() {
               })}
 
               {totalPaginas > 1 && (
-                <Pagination currentPage={pagina} totalPages={totalPaginas} onPageChange={(p) => carregar(p)} />
+                <Pagination currentPage={pagina} totalPages={totalPaginas} onPageChange={(p) => setPagina(p)} />
               )}
             </>
           )}

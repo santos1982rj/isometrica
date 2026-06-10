@@ -1,0 +1,26 @@
+- generic [active] [ref=e1]:
+  - region "Notifications alt+T"
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]: I
+      - generic [ref=e6]: Entrar
+      - generic [ref=e7]: Acesse sua conta Isométrica
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - generic [ref=e10]:
+          - generic [ref=e11]: Email
+          - textbox "Email" [ref=e12]:
+            - /placeholder: seu@email.com
+        - generic [ref=e13]:
+          - generic [ref=e14]:
+            - generic [ref=e15]: Senha
+            - link "Esqueceu a senha?" [ref=e16] [cursor=pointer]:
+              - /url: /esqueceu-senha
+          - textbox "Senha" [ref=e17]:
+            - /placeholder: ••••••••
+        - button "Entrar" [ref=e18]
+      - paragraph [ref=e19]:
+        - text: Não tem conta?
+        - link "Cadastre-se" [ref=e20] [cursor=pointer]:
+          - /url: /cadastro
+  - alert [ref=e21]

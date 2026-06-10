@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
-import { api } from '@/lib/api'
+import { useCreateCourse, useModules, useLessons } from '@/lib/queries'
 import {
   ChevronLeft, Save, Loader2, BookOpen, Image, Settings,
   Check, ChevronRight, ArrowLeft, Crown, Plus, Trash2, Play, FileText, Edit3,
@@ -59,6 +59,10 @@ export default function CriarCursoPage() {
   const [preco, setPreco] = useState(49.90)
   const [certificado, setCertificado] = useState(true)
 
+  const createCourse = useCreateCourse()
+  const createModule = useModules()
+  const createLesson = useLessons()
+
   // Actions
   function addModulo() {
     if (!novoModNome.trim()) return
@@ -107,27 +111,27 @@ export default function CriarCursoPage() {
     setEnviando(true)
     try {
       // 1. Criar curso
-      const curso = await api.courses.criar({
+      const curso = await createCourse.mutateAsync({
         name: nome, description: descricao, color, estimatedHours: cargaHoraria,
         level: nivel, premium, certificateEnabled: certificado, price: premium ? preco : 0,
       })
 
       // 2. Criar módulos e aulas
       for (const mod of modulos) {
-        const modulo = await api.courses.criarModulo(curso.id, { name: mod.name, order: mod.order })
+        const modulo = await createModule.mutateAsync({ courseId: curso.id, data: { name: mod.name, order: mod.order } })
         for (let i = 0; i < mod.aulas.length; i++) {
           const a = mod.aulas[i]
-          await api.courses.criarAula(modulo.id, {
-            title: a.title, type: 'video', order: i + 1, free: a.free,
-            videoUrl: a.videoUrl || undefined,
+          await createLesson.mutateAsync({
+            moduleId: modulo.id,
+            data: { title: a.title, type: 'video', order: i + 1, free: a.free, videoUrl: a.videoUrl || undefined },
           })
         }
       }
 
       toast.success(`Curso criado com ${modulos.length} módulos e ${modulos.reduce((a, m) => a + m.aulas.length, 0)} aulas!`)
       router.push(`/professor/cursos/${curso.id}`)
-    } catch (err: any) {
-      toast.error(err.message ?? 'Erro ao criar curso')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao criar curso')
     } finally {
       setEnviando(false)
     }

@@ -4,7 +4,10 @@ import { useState, useEffect, use } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
+import { useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
+import { useCourse, useTopics, useCreateQuestion, useModules, useLessons } from '@/lib/queries'
+import type { Questao } from '@/lib/types'
 import {
   ChevronLeft,
   Plus,
@@ -39,8 +42,9 @@ interface Aula {
 
 export default function CursoDetalheProfessor(props: { params: Promise<{ id: string }> }) {
   const { id } = use(props.params)
-  const [curso, setCurso] = useState<any>(null)
-  const [carregando, setCarregando] = useState(true)
+  const queryClient = useQueryClient()
+  const { data: curso, isLoading } = useCourse(id)
+  const { data: allTopics } = useTopics()
   const [moduloAberto, setModuloAberto] = useState<string | null>(null)
 
   // Module form
@@ -61,7 +65,7 @@ export default function CursoDetalheProfessor(props: { params: Promise<{ id: str
   const [enviando, setEnviando] = useState(false)
 
   // Questions
-  const [topics, setTopics] = useState<any[]>([])
+  const [topics, setTopics] = useState<{ id: string; name: string; subjectId: string }[]>([])
   const [selectedTopic, setSelectedTopic] = useState('')
   const [qText, setQText] = useState('')
   const [qDifficulty, setQDifficulty] = useState('EASY')
@@ -69,29 +73,18 @@ export default function CursoDetalheProfessor(props: { params: Promise<{ id: str
   const [qExplanation, setQExplanation] = useState('')
   const [qAlternatives, setQAlternatives] = useState([{ text: '', isCorrect: false }, { text: '', isCorrect: false }, { text: '', isCorrect: false }, { text: '', isCorrect: false }])
   const [criandoQuestao, setCriandoQuestao] = useState(false)
-  const [questoesCurso, setQuestoesCurso] = useState<any[]>([])
+  const [questoesCurso, setQuestoesCurso] = useState<Questao[]>([])
 
-  async function carregar() {
-    try {
-      const data = await api.courses.detalhe(id)
-      setCurso(data)
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setCarregando(false)
-    }
-  }
-
-  useEffect(() => { carregar() }, [id])
+  const createModule = useModules()
+  const createLesson = useLessons()
+  const createQuestion = useCreateQuestion()
 
   useEffect(() => {
-    if (curso?.subject?.id) {
-      api.knowledge.subjects().then(async () => {
-        const topicsData = await api.knowledge.listarTopicos()
-        setTopics(topicsData.filter((t: any) => t.subjectId === curso.subject.id))
-      }).catch(() => {})
+    const subjectId = curso?.subject?.id
+    if (subjectId && allTopics) {
+      setTopics(allTopics.filter((t) => t.subjectId === subjectId))
     }
-  }, [curso?.subject?.id])
+  }, [curso?.subject?.id, allTopics])
 
   // Module CRUD
   async function salvarModulo(e: React.FormEvent) {
@@ -102,14 +95,14 @@ export default function CursoDetalheProfessor(props: { params: Promise<{ id: str
       if (editandoModulo) {
         await api.courses.atualizarModulo(editandoModulo, { name: moduloNome, order: moduloOrdem })
       } else {
-        await api.courses.criarModulo(id, { name: moduloNome, order: moduloOrdem })
+        await createModule.mutateAsync({ courseId: id, data: { name: moduloNome, order: moduloOrdem } })
       }
       setModuloNome('')
       setModuloOrdem((curso?.modules?.length ?? 0) + 1)
       setEditandoModulo(null)
       setShowModuloForm(false)
-      await carregar()
-    } catch (err) {
+      queryClient.invalidateQueries({ queryKey: ['courses', id] })
+    } catch {
       toast.error('Erro ao salvar módulo')
     } finally {
       setEnviando(false)
@@ -127,8 +120,8 @@ export default function CursoDetalheProfessor(props: { params: Promise<{ id: str
     if (!confirm('Remover este módulo e todas as suas aulas?')) return
     try {
       await api.courses.removerModulo(modId)
-      await carregar()
-    } catch (err) {
+      queryClient.invalidateQueries({ queryKey: ['courses', id] })
+    } catch {
       toast.error('Erro ao remover módulo')
     }
   }
@@ -161,12 +154,12 @@ export default function CursoDetalheProfessor(props: { params: Promise<{ id: str
       if (editandoAula) {
         await api.courses.atualizarAula(editandoAula, { title: aulaTitulo, content: aulaConteudo || undefined, videoUrl: aulaVideoUrl || undefined })
       } else {
-        await api.courses.criarAula(showAulaForm, { title: aulaTitulo, type: aulaTipo, order: aulaOrdem, content: aulaConteudo || undefined, videoUrl: aulaVideoUrl || undefined })
+        await createLesson.mutateAsync({ moduleId: showAulaForm, data: { title: aulaTitulo, type: aulaTipo, order: aulaOrdem, content: aulaConteudo || undefined, videoUrl: aulaVideoUrl || undefined } })
       }
       setShowAulaForm(null)
       setEditandoAula(null)
-      await carregar()
-    } catch (err) {
+      queryClient.invalidateQueries({ queryKey: ['courses', id] })
+    } catch {
       toast.error('Erro ao salvar aula')
     } finally {
       setEnviando(false)
@@ -177,13 +170,13 @@ export default function CursoDetalheProfessor(props: { params: Promise<{ id: str
     if (!confirm('Remover esta aula?')) return
     try {
       await api.courses.removerAula(aulaId)
-      await carregar()
-    } catch (err) {
+      queryClient.invalidateQueries({ queryKey: ['courses', id] })
+    } catch {
       toast.error('Erro ao remover aula')
     }
   }
 
-  if (carregando) {
+  if (isLoading) {
     return (
       <div className="space-y-4">
         <div className="h-6 w-48 animate-pulse rounded bg-muted" />
@@ -426,7 +419,7 @@ export default function CursoDetalheProfessor(props: { params: Promise<{ id: str
                 className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-isometrica-accent"
               >
                 <option value="">Selecione um tópico</option>
-                {topics.map((t: any) => (
+                {topics.map((t) => (
                   <option key={t.id} value={t.id}>{t.name}</option>
                 ))}
               </select>
@@ -497,7 +490,7 @@ export default function CursoDetalheProfessor(props: { params: Promise<{ id: str
                   onClick={async () => {
                     setCriandoQuestao(true)
                     try {
-                      await api.conteudo.criarQuestao({
+                      await createQuestion.mutateAsync({
                         text: qText, topicId: selectedTopic, difficulty: qDifficulty,
                         bloomLevel: qBloom, explanation: qExplanation || undefined,
                         alternatives: qAlternatives,
@@ -507,7 +500,7 @@ export default function CursoDetalheProfessor(props: { params: Promise<{ id: str
                       setQAlternatives(qAlternatives.map((a) => ({ ...a, text: '', isCorrect: false })))
                       qAlternatives[0].isCorrect = true
                       toast.success('Questão criada com sucesso!')
-                    } catch (err) {
+                    } catch {
                       toast.error('Erro ao criar questão')
                     } finally {
                       setCriandoQuestao(false)

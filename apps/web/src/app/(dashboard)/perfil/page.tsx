@@ -1,9 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { api } from '@/lib/api'
+import { useProfile } from '@/lib/queries'
 import { useAuth } from '@/contexts/auth-context'
 import { Badge } from '@/components/ui/badge'
 import { StatSkeleton } from '@/components/skeleton-loading'
@@ -22,12 +21,7 @@ function getLevelColor(lvl: number) { return levelColors[Math.min(Math.floor(lvl
 
 export default function MeuPerfilPage() {
   const { usuario } = useAuth()
-  const [data, setData] = useState<any>(null)
-  const [carregando, setCarregando] = useState(true)
-
-  useEffect(() => {
-    api.profile.me().then(setData).catch(console.error).finally(() => setCarregando(false))
-  }, [])
+  const { data, isLoading: carregando } = useProfile()
 
   if (carregando) return (
     <div className="max-w-5xl mx-auto space-y-5 p-5">
@@ -135,7 +129,7 @@ export default function MeuPerfilPage() {
             <p className="py-6 text-center text-sm text-muted-foreground">Nenhum certificado ainda.</p>
           ) : (
             <div className="space-y-2">
-              {certs.slice(0, 4).map((c: any) => (
+              {certs.slice(0, 4).map((c) => (
                 <div key={c.id} className="flex items-center gap-3 rounded-lg p-2.5 transition-colors hover:bg-muted/50">
                   <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-isometrica-accent to-orange-400 text-white shadow-sm">
                     <Award className="size-4" />
@@ -164,7 +158,7 @@ export default function MeuPerfilPage() {
             <p className="py-6 text-center text-sm text-muted-foreground">Nenhum curso em andamento.</p>
           ) : (
             <div className="space-y-3">
-              {enrollments.slice(0, 5).map((e: any) => (
+              {enrollments.slice(0, 5).map((e) => (
                 <Link key={e.id} href={`/cursos/${e.courseId}`} className="flex items-center gap-3 rounded-lg p-2.5 transition-colors hover:bg-muted/50 no-underline">
                   <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-isometrica-info/10"><GraduationCap className="size-4 text-isometrica-info" /></div>
                   <div className="min-w-0 flex-1">

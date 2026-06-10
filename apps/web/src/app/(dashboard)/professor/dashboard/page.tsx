@@ -1,10 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { api } from '@/lib/api'
 import { useAuth } from '@/contexts/auth-context'
+import { useProfessorAnalytics } from '@/lib/queries'
 import {
   BookOpen, Users, FileText, Plus, TrendingUp, Clock, ChevronRight,
   BarChart3, GraduationCap, AlertTriangle, CheckCircle, Play, Loader2,
@@ -22,14 +21,9 @@ const item = {
 
 export default function ProfessorDashboardPage() {
   const { usuario } = useAuth()
-  const [data, setData] = useState<any>(null)
-  const [carregando, setCarregando] = useState(true)
+  const { data, isLoading } = useProfessorAnalytics()
 
-  useEffect(() => {
-    api.analytics.professor().then(setData).catch(console.error).finally(() => setCarregando(false))
-  }, [])
-
-  if (carregando) {
+  if (isLoading) {
     return (
       <div className="space-y-5">
         <div className="h-8 w-64 animate-pulse rounded bg-muted" />
@@ -97,7 +91,7 @@ export default function ProfessorDashboardPage() {
             <p className="py-8 text-center text-sm text-muted-foreground">Nenhum curso criado ainda.</p>
           ) : (
             <div className="space-y-3">
-              {courses.map((curso: any) => (
+              {courses.map((curso) => (
                 <div key={curso.id} className="flex items-center gap-4 rounded-lg border border-border p-3 transition-colors hover:bg-muted/50">
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold">{curso.name}</p>
@@ -135,7 +129,7 @@ export default function ProfessorDashboardPage() {
             <p className="py-8 text-center text-sm text-muted-foreground">Nenhum aluno com dificuldade identificado.</p>
           ) : (
             <div className="space-y-2">
-              {strugglingStudents.map((a: any) => (
+              {strugglingStudents.map((a) => (
                 <div key={a.id} className="flex items-center gap-3 rounded-lg p-2.5 transition-colors hover:bg-muted/50">
                   <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-isometrica-accent to-orange-400 text-xs font-bold text-white">
                     {a.name[0]}

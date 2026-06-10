@@ -1,9 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { api } from '@/lib/api'
+import { useCertificates } from '@/lib/queries'
 import { Award, Download, ChevronRight, GraduationCap, Calendar, BarChart3, Clock, CheckCircle, Share2 } from 'lucide-react'
 
 const container = {
@@ -17,12 +16,7 @@ const item = {
 }
 
 export default function CertificadosPage() {
-  const [certificados, setCertificados] = useState<any[]>([])
-  const [carregando, setCarregando] = useState(true)
-
-  useEffect(() => {
-    api.learning.certificados().then(setCertificados).catch(console.error).finally(() => setCarregando(false))
-  }, [])
+  const { data: certificados = [], isLoading: carregando } = useCertificates()
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-5">

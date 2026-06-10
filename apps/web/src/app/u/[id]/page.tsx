@@ -1,20 +1,16 @@
 'use client'
 
-import { useState, useEffect, use } from 'react'
+import { use } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { api } from '@/lib/api'
+import { usePublicProfile } from '@/lib/queries'
+import type { PublicProfileResponse } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
 import { Award, BookOpen, ExternalLink, Flame, Star, Trophy, Zap, User, GraduationCap, Target, Crown } from 'lucide-react'
 
 export default function PerfilPublicoPage(props: { params: Promise<{ id: string }> }) {
   const { id } = use(props.params)
-  const [data, setData] = useState<any>(null)
-  const [carregando, setCarregando] = useState(true)
-
-  useEffect(() => {
-    api.profile.publico(id).then(setData).catch(console.error).finally(() => setCarregando(false))
-  }, [id])
+  const { data, isLoading: carregando } = usePublicProfile(id)
 
   if (carregando) return (
     <div className="min-h-screen bg-background flex items-center justify-center">
@@ -93,7 +89,7 @@ export default function PerfilPublicoPage(props: { params: Promise<{ id: string 
             <div className="rounded-xl border border-border bg-card p-5">
               <h2 className="text-sm font-semibold mb-3 flex items-center gap-2"><Award className="size-4 text-isometrica-accent" /> Certificados</h2>
               <div className="space-y-2">
-                {certificates.map((c: any) => (
+                {certificates.map((c) => (
                   <div key={c.id} className="flex items-center gap-3 rounded-lg bg-muted/30 p-3">
                     <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-isometrica-accent to-orange-400 text-white"><Award className="size-4" /></div>
                     <div className="min-w-0 flex-1">
@@ -111,7 +107,7 @@ export default function PerfilPublicoPage(props: { params: Promise<{ id: string 
             <div className="rounded-xl border border-border bg-card p-5">
               <h2 className="text-sm font-semibold mb-3 flex items-center gap-2"><BookOpen className="size-4 text-isometrica-accent" /> Cursos</h2>
               <div className="space-y-2">
-                {coursesCreated.map((c: any) => (
+                {coursesCreated.map((c) => (
                   <div key={c.id} className="flex items-center gap-3 rounded-lg bg-muted/30 p-3">
                     <GraduationCap className="size-4 shrink-0 text-isometrica-accent" />
                     <span className="text-sm font-medium">{c.name}</span>

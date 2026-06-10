@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
-import { api } from '@/lib/api'
 import { useAuth } from '@/contexts/auth-context'
+import { usePlans, useSubscriptions, useSubscribe } from '@/lib/queries'
+import type { Plano, Assinatura } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
 import { Check, Crown, Sparkles, Loader2, CreditCard, Shield, Star } from 'lucide-react'
 
@@ -20,43 +21,29 @@ const item = {
 
 export default function AssinaturaPage() {
   const { usuario } = useAuth()
-  const [planos, setPlanos] = useState<any[]>([])
-  const [assinaturaAtiva, setAssinaturaAtiva] = useState<any>(null)
-  const [carregando, setCarregando] = useState(true)
+  const { data: planos, isLoading: carregando } = usePlans()
+  const { data: subscriptions } = useSubscriptions(usuario?.id ?? '')
+  const subscribe = useSubscribe()
   const [assinando, setAssinando] = useState<string | null>(null)
 
-  useEffect(() => {
-    async function carregar() {
-      try {
-        const [plans, subs] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api'}/financial/plans`).then((r) => r.json()),
-          usuario ? api.learning.matriculas(usuario.id).catch(() => []) : [],
-        ])
-        setPlanos(plans)
-        if (usuario) {
-          const userSubs = await api.financeiro.assinaturas(usuario.id).catch(() => [])
-          setAssinaturaAtiva(userSubs.find((s: any) => s.status === 'active') ?? null)
-        }
-      } catch {} finally {
-        setCarregando(false)
-      }
-    }
-    carregar()
-  }, [usuario])
+  const assinaturaAtiva = useMemo(
+    () => subscriptions?.find((s: Assinatura) => s.status === 'active') ?? null,
+    [subscriptions]
+  )
+
+  const isPremium = assinaturaAtiva?.plan?.name !== 'Gratuito'
 
   async function assinar(planId: string) {
     if (!usuario) return
     setAssinando(planId)
     try {
-      await api.financeiro.assinar(usuario.id, planId)
-      const subs = await api.financeiro.assinaturas(usuario.id)
-      setAssinaturaAtiva(subs.find((s: any) => s.status === 'active') ?? null)
-    } catch { toast.error('Erro ao processar assinatura') } finally {
+      await subscribe.mutateAsync({ userId: usuario.id, planId })
+    } catch {
+      toast.error('Erro ao processar assinatura')
+    } finally {
       setAssinando(null)
     }
   }
-
-  const isPremium = assinaturaAtiva?.plan?.name !== 'Gratuito'
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="mx-auto max-w-4xl space-y-6">
@@ -82,7 +69,7 @@ export default function AssinaturaPage() {
         </div>
       ) : (
         <motion.div variants={container} className="grid gap-6 md:grid-cols-2">
-          {planos.map((plano, idx) => {
+          {planos?.map((plano, idx) => {
             const isPremiumPlan = plano.name !== 'Gratuito'
             const isAtivo = assinaturaAtiva?.planId === plano.id
             const price = Number(plano.price)

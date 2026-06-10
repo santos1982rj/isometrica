@@ -1,12 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { api } from '@/lib/api'
+import { useCourses } from '@/lib/queries'
 import type { Curso } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
-import { BookOpen, Clock, ChevronRight, GraduationCap } from 'lucide-react'
+import { BookOpen, ChevronRight, GraduationCap } from 'lucide-react'
 
 const container = {
   hidden: {},
@@ -28,12 +27,7 @@ const gradients = [
 ]
 
 export default function CursosPage() {
-  const [cursos, setCursos] = useState<Curso[]>([])
-  const [carregando, setCarregando] = useState(true)
-
-  useEffect(() => {
-    api.courses.listar().then(setCursos).catch(console.error).finally(() => setCarregando(false));
-  }, [])
+  const { data: cursos, isLoading: carregando } = useCourses()
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
@@ -57,7 +51,7 @@ export default function CursosPage() {
         </div>
       ) : (
         <motion.div variants={container} className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {cursos.map((curso, idx) => {
+          {cursos?.map((curso, idx) => {
             const totalAulas = curso.modules?.reduce((a, m) => a + (m.lessons?.length ?? 0), 0) ?? 0
             const totalModulos = curso.modules?.length ?? 0
             const grad = gradients[idx % gradients.length]

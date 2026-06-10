@@ -7,7 +7,8 @@ import { useAuth } from '@/contexts/auth-context'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
-import type { Aula, Questao } from '@/lib/types'
+import { useNote, useSaveNote, useMarkProgress, useSubmitAttempt } from '@/lib/queries'
+import type { Aula, Modulo, Questao } from '@/lib/types'
 import {
   ChevronRight, Play, FileText, CheckCircle, Circle, Check, ArrowLeft, ArrowRight,
   BookOpen, Download, FileDown, User, StickyNote, Lightbulb, FileQuestion, Sparkles, Menu, X,
@@ -30,14 +31,22 @@ export default function AulaPage(props: { params: Promise<{ id: string }> }) {
   const [sidebarAberta, setSidebarAberta] = useState(false)
   const notasTimer = useRef<ReturnType<typeof setTimeout>>(null)
 
+  const { data: notaData } = useNote(usuario?.id ?? '', id)
+  const saveNoteMutation = useSaveNote()
+  const submitAttemptMutation = useSubmitAttempt()
+  const markProgressMutation = useMarkProgress()
+
+  useEffect(() => {
+    if (notaData?.notes !== undefined) setNotas(notaData.notes)
+  }, [notaData])
+
   useEffect(() => {
     if (id) {
       setQuestoesCarregando(true)
       api.conteudo.questoes(id).then(setQuestoes).catch(() => {}).finally(() => setQuestoesCarregando(false))
       setRespostas({}); setQuizEnviado(false)
-      if (usuario) api.learning.anotacao(usuario.id, id).then((r) => setNotas(r.notes)).catch(() => {})
     }
-  }, [id, usuario])
+  }, [id])
 
   useEffect(() => {
     setCarregando(true)
@@ -46,15 +55,14 @@ export default function AulaPage(props: { params: Promise<{ id: string }> }) {
     }).catch(console.error).finally(() => setCarregando(false))
   }, [id])
 
-  // Auto-save notas com debounce
   const salvarNotas = useCallback(async (texto: string) => {
     if (!usuario) return
     try {
-      await api.learning.salvarAnotacao(usuario.id, id, texto)
+      await saveNoteMutation.mutateAsync({ userId: usuario.id, lessonId: id, notes: texto })
       setNotasSalvas(true)
       setTimeout(() => setNotasSalvas(false), 2000)
     } catch {}
-  }, [usuario, id])
+  }, [usuario, id, saveNoteMutation])
 
   function handleNotasChange(v: string) {
     setNotas(v)
@@ -67,7 +75,7 @@ export default function AulaPage(props: { params: Promise<{ id: string }> }) {
     setCompletando(true)
     const novo = !completa
     try {
-      await api.learning.marcarProgresso(usuario.id, id, novo)
+      await markProgressMutation.mutateAsync({ userId: usuario.id, lessonId: id, completed: novo })
       setCompleta(novo)
     } catch {} finally { setCompletando(false) }
   }
@@ -101,8 +109,8 @@ export default function AulaPage(props: { params: Promise<{ id: string }> }) {
   const moduloId = aula.module?.id
   const aulasModulo = aula.moduleLessons ?? []
   const videoEmbedUrl = aula.contentUrl?.replace('watch?v=', 'embed/')?.split('&')[0]
-  const prof = (aula as any).professor
-  const materials: { name: string; url: string }[] = (aula as any).materials ?? []
+  const prof = aula.professor
+  const materials = aula.materials ?? []
 
   return (
     <div className="mx-auto max-w-7xl">
@@ -216,7 +224,7 @@ export default function AulaPage(props: { params: Promise<{ id: string }> }) {
                             setQuizEnviado(true)
                             if (usuario) questoes.forEach((q) => {
                               const esc = respostas[q.id]; const correta = q.alternatives.find((a) => a.isCorrect)
-                              api.learning.enviarTentativa({ userId: usuario.id, questionId: q.id, selectedId: esc ?? '', correct: esc === correta?.id }).catch(() => {})
+                              submitAttemptMutation.mutate({ userId: usuario.id, questionId: q.id, selectedId: esc ?? '', correct: esc === correta?.id })
                             })
                           }} className="rounded-lg bg-isometrica-accent px-4 py-2 text-xs font-semibold text-white hover:bg-isometrica-accent/90">Corrigir</button>
                         )}
@@ -350,14 +358,14 @@ export default function AulaPage(props: { params: Promise<{ id: string }> }) {
                 </div>
                 <div className="p-2">
                   <Accordion defaultValue={[moduloId ?? '']} className="space-y-0.5">
-                    {(aula.module ? [{ ...aula.module, lessons: aulasModulo }] : []).map((mod: any) => (
+                    {(aula.module ? [{ ...aula.module, order: 0, lessons: aulasModulo }] : []).map((mod: Modulo) => (
                       <AccordionItem key={mod.id} value={mod.id} className="border-0">
                         <AccordionTrigger className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-muted/60 [&[data-state=open]]:bg-muted/60 no-underline transition-colors">
                           <span className="text-left leading-snug"><span className="text-xs text-muted-foreground font-normal">Módulo {mod.order}</span><br />{mod.name}</span>
                         </AccordionTrigger>
                         <AccordionContent className="pb-1 pt-0.5">
                           <div className="space-y-0.5 pl-1">
-                            {mod.lessons.map((l: any) => {
+                            {mod.lessons.map((l: Aula) => {
                               const ativa = l.id === id; const concluida = completa && ativa
                               return (
                                 <Link key={l.id} href={`/aulas/${l.id}`} onClick={() => setSidebarAberta(false)}
@@ -409,7 +417,7 @@ export default function AulaPage(props: { params: Promise<{ id: string }> }) {
                   <p className="text-xs text-muted-foreground text-center py-4">Nenhum material disponível</p>
                 ) : (
                   <div className="space-y-2">
-                    {materials.map((mat: any, i: number) => (
+                    {materials.map((mat: { name: string; url: string; type: string }, i: number) => (
                       <a key={i} href={mat.url} target="_blank" rel="noopener noreferrer"
                         className="flex w-full items-center gap-3 rounded-lg p-2 text-left text-sm transition-colors hover:bg-muted">
                         <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-isometrica-accent/10">

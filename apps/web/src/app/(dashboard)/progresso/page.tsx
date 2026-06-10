@@ -1,11 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { api } from '@/lib/api';
+import { useLearningModel, useDiagnostics } from '@/lib/queries';
 import { useAuth } from '@/contexts/auth-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 
 function BarraProficiencia({ label, valor, cor }: { label: string; valor: number; cor: string }) {
   const pct = Math.round(valor * 100);
@@ -56,20 +54,11 @@ function DonutChart({ valor, rotulo }: { valor: number; rotulo: string }) {
 
 export default function ProgressoPage() {
   const { usuario } = useAuth();
-  const [modelo, setModelo] = useState<any[]>([]);
-  const [diagnosticos, setDiagnosticos] = useState<any[]>([]);
-  const [carregando, setCarregando] = useState(true);
-
-  useEffect(() => {
-    if (!usuario) return;
-    Promise.all([
-      api.learning.modelo(usuario.id),
-      api.learning.diagnosticos(usuario.id),
-    ]).then(([m, d]) => {
-      setModelo(m);
-      setDiagnosticos(d);
-    }).catch(console.error).finally(() => setCarregando(false));
-  }, [usuario]);
+  const modeloQuery = useLearningModel(usuario?.id ?? '');
+  const diagQuery = useDiagnostics(usuario?.id ?? '');
+  const carregando = modeloQuery.isLoading || diagQuery.isLoading;
+  const modelo = modeloQuery.data ?? [];
+  const diagnosticos = diagQuery.data ?? [];
 
   if (!usuario) return null;
 

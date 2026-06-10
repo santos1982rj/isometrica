@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { api } from '@/lib/api'
+import { useAdminFinanceiro } from '@/lib/queries'
+import type { AdminFinanceiro } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
 import { DollarSign, TrendingUp, TrendingDown, Users, CreditCard, ArrowUpRight, Receipt, Calendar } from 'lucide-react'
 
@@ -21,12 +21,7 @@ function formatCurrency(value: number) {
 }
 
 export default function AdminFinanceiroPage() {
-  const [data, setData] = useState<any>(null)
-  const [carregando, setCarregando] = useState(true)
-
-  useEffect(() => {
-    api.financeiro.adminOverview().then(setData).catch(console.error).finally(() => setCarregando(false))
-  }, [])
+  const { data, isLoading: carregando } = useAdminFinanceiro()
 
   if (carregando) {
     return (
@@ -40,9 +35,9 @@ export default function AdminFinanceiroPage() {
     )
   }
 
-  const overview = data?.overview ?? {}
-  const planDistribution = data?.planDistribution ?? []
-  const recentPayments = data?.recentPayments ?? []
+  const overview: AdminFinanceiro['overview'] = data?.overview ?? {} as AdminFinanceiro['overview']
+  const planDistribution: AdminFinanceiro['planDistribution'] = data?.planDistribution ?? []
+  const recentPayments: AdminFinanceiro['recentPayments'] = data?.recentPayments ?? []
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-5">
@@ -83,7 +78,7 @@ export default function AdminFinanceiroPage() {
             <p className="py-8 text-center text-sm text-muted-foreground">Nenhum pagamento registrado.</p>
           ) : (
             <div className="space-y-1">
-              {recentPayments.map((p: any) => (
+              {recentPayments.map((p) => (
                 <div key={p.id} className="flex items-center gap-3 rounded-lg p-2.5 transition-colors hover:bg-muted/50">
                   <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-isometrica-accent to-orange-400 text-xs font-bold text-white">
                     {p.userName[0]}
@@ -115,8 +110,8 @@ export default function AdminFinanceiroPage() {
             <h3 className="text-sm font-semibold">Distribuição</h3>
           </div>
           <div className="space-y-4">
-            {planDistribution.map((plan: any) => {
-              const total = planDistribution.reduce((a: number, p: any) => a + p.count, 0)
+            {planDistribution.map((plan, index) => {
+              const total = planDistribution.reduce((a: number, p) => a + p.count, 0)
               const pct = total > 0 ? Math.round((plan.count / total) * 100) : 0
               const colors = ['bg-isometrica-accent', 'bg-muted-foreground', 'bg-isometrica-info', 'bg-isometrica-success']
               return (
@@ -130,7 +125,7 @@ export default function AdminFinanceiroPage() {
                   </div>
                   {plan.count > 0 && (
                     <div className="h-2 overflow-hidden rounded-full bg-muted">
-                      <div className={`h-full rounded-full ${colors[planDistribution.indexOf(plan) % colors.length]}`} style={{ width: `${pct}%` }} />
+                      <div className={`h-full rounded-full ${colors[index % colors.length]}`} style={{ width: `${pct}%` }} />
                     </div>
                   )}
                   {plan.price > 0 && (

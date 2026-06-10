@@ -1,10 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
-import { api } from '@/lib/api'
+import { useCourses, useDeleteCourse } from '@/lib/queries'
 import { Plus, BookOpen, FileText, Users, Edit, Trash2, ChevronRight, GraduationCap, AlertCircle } from 'lucide-react'
 
 const container = {
@@ -25,22 +24,14 @@ const gradients = [
 ]
 
 export default function ProfessorCursosPage() {
-  const [cursos, setCursos] = useState<any[]>([])
-  const [carregando, setCarregando] = useState(true)
-
-  function carregar() {
-    setCarregando(true)
-    api.courses.listar().then(setCursos).catch(console.error).finally(() => setCarregando(false))
-  }
-
-  useEffect(() => { carregar() }, [])
+  const { data: cursos = [], isLoading } = useCourses()
+  const deleteMutation = useDeleteCourse()
 
   async function remover(id: string, nome: string) {
     if (!confirm(`Remover "${nome}"? Esta ação não pode ser desfeita.`)) return
     try {
-      await api.courses.remover(id)
-      carregar()
-    } catch (err) {
+      await deleteMutation.mutateAsync(id)
+    } catch {
       toast.error('Erro ao remover curso')
     }
   }
@@ -61,7 +52,7 @@ export default function ProfessorCursosPage() {
         </Link>
       </motion.div>
 
-      {carregando ? (
+      {isLoading ? (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map((i) => (
             <div key={i} className="animate-pulse overflow-hidden rounded-xl border border-border bg-card">
@@ -89,7 +80,7 @@ export default function ProfessorCursosPage() {
       ) : (
         <motion.div variants={container} className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {cursos.map((curso, idx) => {
-            const totalAulas = curso.modules?.reduce((a: number, m: any) => a + (m.lessons?.length ?? 0), 0) ?? 0
+            const totalAulas = curso.modules?.reduce((a, m) => a + (m.lessons?.length ?? 0), 0) ?? 0
             const grad = gradients[idx % gradients.length]
 
             return (

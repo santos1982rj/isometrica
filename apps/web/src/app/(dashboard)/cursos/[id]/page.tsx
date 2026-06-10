@@ -1,16 +1,20 @@
 'use client'
 
-import { useState, useEffect, use } from 'react'
+import { useState, use } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
-import { api } from '@/lib/api'
 import { useAuth } from '@/contexts/auth-context'
 import { Badge } from '@/components/ui/badge'
 import {
   ChevronRight, Play, FileText, BookOpen, GraduationCap, Clock, CheckCircle, Lock, Loader2,
   ChevronDown, ChevronUp, Sparkles, BarChart3, Users, Award, Crown, Star, AlignLeft, Link2, Briefcase,
 } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
+import {
+  useCourse, useCourseAccess, useCourseProgress, useEnroll, usePurchase, useGenerateCertificate,
+} from '@/lib/queries'
+import type { Modulo, Aula } from '@/lib/types'
 
 const levelLabel: Record<string, string> = {
   iniciante: 'Iniciante', intermediario: 'Intermediário', avancado: 'Avançado',
@@ -19,61 +23,41 @@ const levelLabel: Record<string, string> = {
 export default function CursoDetalhePage(props: { params: Promise<{ id: string }> }) {
   const { id } = use(props.params)
   const { usuario } = useAuth()
-  const [curso, setCurso] = useState<any>(null)
-  const [carregando, setCarregando] = useState(true)
-  const [temAcesso, setTemAcesso] = useState(false)
-  const [matriculando, setMatriculando] = useState(false)
-  const [comprando, setComprando] = useState(false)
+  const qc = useQueryClient()
+  const { data: curso, isLoading } = useCourse(id)
+  const { data: acessoInfo } = useCourseAccess(id)
+  const temAcesso = acessoInfo?.hasAccess ?? false
+  const { data: progresso } = useCourseProgress(
+    temAcesso ? (usuario?.id ?? '') : '',
+    temAcesso ? id : '',
+  )
+  const enrollMutation = useEnroll()
+  const purchaseMutation = usePurchase()
+  const certificateMutation = useGenerateCertificate()
   const [moduloAberto, setModuloAberto] = useState<string | null>(null)
-  const [progresso, setProgresso] = useState<{ total: number; completed: number; percentage: number } | null>(null)
-  const [acessoInfo, setAcessoInfo] = useState<any>(null)
-
-  useEffect(() => {
-    async function carregar() {
-      try {
-        const [data, acesso] = await Promise.all([
-          api.courses.detalhe(id),
-          api.courses.verificarAcesso(id).catch(() => null),
-        ])
-        setCurso(data)
-        setAcessoInfo(acesso)
-        if (acesso?.hasAccess) setTemAcesso(true)
-        if (usuario && acesso?.hasAccess) {
-          api.learning.progressoCurso(usuario.id, id).then(setProgresso).catch(() => {})
-        }
-      } catch {
-        toast.error('Erro ao carregar curso')
-      } finally {
-        setCarregando(false)
-      }
-    }
-    carregar()
-  }, [id, usuario])
 
   async function matricular() {
     if (!usuario) return
-    setMatriculando(true)
     try {
-      await api.learning.matricular(usuario.id, id)
-      setTemAcesso(true)
-      setAcessoInfo((p: any) => ({ ...p, hasAccess: true }))
+      await enrollMutation.mutateAsync({ userId: usuario.id, courseId: id })
+      await qc.invalidateQueries({ queryKey: ['courses', id, 'access'] })
       toast.success('Matrícula realizada!')
-    } catch { toast.error('Erro ao matricular') }
-    finally { setMatriculando(false) }
+    } catch {
+      toast.error('Erro ao matricular')
+    }
   }
 
   async function comprar() {
-    setComprando(true)
     try {
-      await api.courses.comprar(id)
-      setTemAcesso(true)
-      setAcessoInfo((p: any) => ({ ...p, hasAccess: true }))
+      await purchaseMutation.mutateAsync(id)
+      await qc.invalidateQueries({ queryKey: ['courses', id, 'access'] })
       toast.success('Curso adquirido!')
-    } catch (err: any) { toast.error(err.message ?? 'Erro ao comprar') }
-    finally { setComprando(false) }
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao comprar')
+    }
   }
 
-  if (carregando) return (
+  if (isLoading) return (
     <div className="mx-auto max-w-6xl space-y-5 p-5">
       <div className="h-52 animate-pulse rounded-2xl bg-muted" />
       <div className="grid gap-8 lg:grid-cols-3">
@@ -96,7 +80,7 @@ export default function CursoDetalhePage(props: { params: Promise<{ id: string }
     </div>
   )
 
-  const totalAulas = (curso.modules ?? []).reduce((a: number, m: any) => a + (m.lessons?.length ?? 0), 0)
+  const totalAulas = (curso.modules ?? []).reduce((a: number, m: Modulo) => a + (m.lessons?.length ?? 0), 0)
   const grad = curso.color ?? 'from-violet-600 to-purple-700'
   const precisaCompra = acessoInfo?.needsPurchase && !temAcesso
 
@@ -143,18 +127,18 @@ export default function CursoDetalhePage(props: { params: Promise<{ id: string }
           </div>
 
           {!temAcesso && !precisaCompra && (
-            <button onClick={matricular} disabled={matriculando}
+            <button onClick={matricular} disabled={enrollMutation.isPending}
               className="mt-6 inline-flex items-center gap-1.5 rounded-xl bg-white/20 backdrop-blur-sm px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-white/30 disabled:opacity-60">
-              {matriculando ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-              {matriculando ? 'Matriculando...' : 'Matricular grátis'}
+              {enrollMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
+              {enrollMutation.isPending ? 'Matriculando...' : 'Matricular grátis'}
             </button>
           )}
 
           {precisaCompra && (
-            <button onClick={comprar} disabled={comprando}
+            <button onClick={comprar} disabled={purchaseMutation.isPending}
               className="mt-6 inline-flex items-center gap-1.5 rounded-xl bg-amber-400/20 backdrop-blur-sm px-6 py-3 text-sm font-semibold text-amber-300 transition-all hover:bg-amber-400/30 border border-amber-400/30 disabled:opacity-60">
-              {comprando ? <Loader2 className="size-4 animate-spin" /> : <Crown className="size-4" />}
-              {comprando ? 'Processando...' : `Comprar R$ ${Number(acessoInfo?.price ?? curso.price ?? 0).toFixed(2).replace('.', ',')}`}
+              {purchaseMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Crown className="size-4" />}
+              {purchaseMutation.isPending ? 'Processando...' : `Comprar R$ ${Number(acessoInfo?.price ?? curso.price ?? 0).toFixed(2).replace('.', ',')}`}
             </button>
           )}
 
@@ -178,9 +162,9 @@ export default function CursoDetalhePage(props: { params: Promise<{ id: string }
               Ementa — {curso.modules?.length ?? 0} módulos · {totalAulas} aulas
             </h2>
             <div className="space-y-2">
-              {(curso.modules ?? []).map((modulo: any, idx: number) => {
+              {(curso.modules ?? []).map((modulo: Modulo, idx: number) => {
                 const aulas = modulo.lessons ?? []
-                const aulasCompletas = progresso ? aulas.filter((a: any) => a.id && progresso.completed >= a.order).length : 0
+                const aulasCompletas = progresso ? aulas.filter((a: Aula) => a.id && progresso.completed >= a.order).length : 0
                 return (
                   <div key={modulo.id} className="overflow-hidden rounded-xl border border-border bg-card">
                     <button onClick={() => setModuloAberto(moduloAberto === modulo.id ? null : modulo.id)}
@@ -200,7 +184,7 @@ export default function CursoDetalhePage(props: { params: Promise<{ id: string }
 
                     {moduloAberto === modulo.id && (
                       <div className="border-t border-border divide-y divide-border">
-                        {aulas.map((aula: any) => {
+                        {aulas.map((aula: Aula) => {
                           const isFree = !curso.premium || temAcesso
                           return (
                             <div key={aula.id} className="flex items-center gap-3 px-5 py-3">
@@ -261,21 +245,21 @@ export default function CursoDetalhePage(props: { params: Promise<{ id: string }
                   <Play className="size-4" /> Continuar
                 </Link>
               ) : precisaCompra ? (
-                <button onClick={comprar} disabled={comprando}
+                <button onClick={comprar} disabled={purchaseMutation.isPending}
                   className="mt-5 flex w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg disabled:opacity-60">
-                  {comprando ? <Loader2 className="size-4 animate-spin" /> : <Crown className="size-4" />}
-                  {comprando ? 'Processando...' : `Comprar R$ ${Number(acessoInfo?.price ?? 0).toFixed(2).replace('.', ',')}`}
+                  {purchaseMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Crown className="size-4" />}
+                  {purchaseMutation.isPending ? 'Processando...' : `Comprar R$ ${Number(acessoInfo?.price ?? 0).toFixed(2).replace('.', ',')}`}
                 </button>
               ) : (
-                <button onClick={matricular} disabled={matriculando}
+                <button onClick={matricular} disabled={enrollMutation.isPending}
                   className="mt-5 flex w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-isometrica-accent to-orange-400 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg disabled:opacity-60">
-                  {matriculando ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-                  {matriculando ? 'Matriculando...' : 'Matricular grátis'}
+                  {enrollMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
+                  {enrollMutation.isPending ? 'Matriculando...' : 'Matricular grátis'}
                 </button>
               )}
 
               {temAcesso && progresso?.percentage === 100 && curso.certificateEnabled && (
-                <button onClick={async () => { try { await api.learning.gerarCertificado(id); window.open('/certificados', '_blank') } catch (err: any) { toast.error(err.message) } }}
+                <button onClick={async () => { try { await certificateMutation.mutateAsync(id); window.open('/certificados', '_blank') } catch (err: unknown) { toast.error(err instanceof Error ? err.message : 'Erro ao gerar certificado') } }}
                   className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-isometrica-accent/30 px-5 py-2.5 text-sm font-semibold text-isometrica-accent transition-all hover:bg-isometrica-accent/5">
                   <Award className="size-4" /> Obter Certificado
                 </button>

@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { api } from '@/lib/api'
 import { useAuth } from '@/contexts/auth-context'
+import { useProfile, useNextLessons, useLearningModel, useEventLogs } from '@/lib/queries'
+import type { EventLog } from '@/lib/types'
 import { StatSkeleton, CardSkeleton } from '@/components/skeleton-loading'
 import { DonutChart } from '@/components/dashboard/donut-chart'
 import { Sparkline } from '@/components/dashboard/sparkline'
@@ -29,6 +29,18 @@ import {
   Star,
   Loader2,
 } from 'lucide-react'
+
+interface ProficienciaItem {
+  proficiency: number
+  topic?: {
+    id: string
+    name: string
+    subject?: {
+      id: string
+      name: string
+    }
+  }
+}
 
 const container = {
   hidden: {},
@@ -63,30 +75,15 @@ function getGreeting() {
 }
 
 export default function DashboardPage() {
-  const { usuario } = useAuth()
-  const [nextLessons, setNextLessons] = useState<any[]>([])
-  const [topicsToReview, setTopicsToReview] = useState<any[]>([])
-  const [profileData, setProfileData] = useState<any>(null)
-  const [proficiencia, setProficiencia] = useState<any[]>([])
-  const [eventos, setEventos] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const { usuario, carregando } = useAuth()
+  const { data: profileData, isLoading: profileLoading } = useProfile()
+  const { data: lessonsData, isLoading: lessonsLoading } = useNextLessons(usuario?.id ?? '')
+  const { data: proficiencia = [] as ProficienciaItem[], isLoading: modelLoading } = useLearningModel(usuario?.id ?? '')
+  const { data: eventos = [], isLoading: eventsLoading } = useEventLogs(usuario?.id ?? '')
 
-  useEffect(() => {
-    if (!usuario) return
-    setLoading(true)
-    Promise.all([
-      api.learning.proximasAulas(usuario.id).catch(() => ({ nextLessons: [], topicsToReview: [] })),
-      api.profile.me().catch(() => null),
-      api.learning.modelo(usuario.id).catch(() => []),
-      api.analytics.eventos(usuario.id).catch(() => []),
-    ]).then(([lessons, profile, modelo, events]) => {
-      setNextLessons((lessons as any).nextLessons ?? [])
-      setTopicsToReview((lessons as any).topicsToReview ?? [])
-      setProfileData(profile)
-      setProficiencia(modelo as any[])
-      setEventos(events as any[])
-    }).finally(() => setLoading(false))
-  }, [usuario])
+  const nextLessons = lessonsData?.nextLessons ?? []
+
+  const loading = carregando || profileLoading || lessonsLoading || modelLoading || eventsLoading
 
   const gamification = profileData?.gamification
   const stats = profileData?.stats
@@ -105,7 +102,7 @@ export default function DashboardPage() {
   ]
 
   const subjects = proficiencia.reduce<{ name: string; desc: string; pct: number; char: string; color: string; bg: string; barColor: string }[]>((acc, item) => {
-    const subjectName = (item.topic?.subject as any)?.name ?? item.topic?.name ?? 'Geral'
+    const subjectName = item.topic?.subject?.name ?? item.topic?.name ?? 'Geral'
     const existing = acc.find(s => s.name === subjectName)
     const pct = Math.round((item.proficiency ?? 0) * 100)
     if (existing) {
@@ -123,7 +120,7 @@ export default function DashboardPage() {
     return acc
   }, [])
 
-  const activityEvents = eventos.slice(0, 4).map((e: any) => {
+  const activityEvents = eventos.slice(0, 4).map((e: EventLog) => {
     const labels: Record<string, string> = {
       LESSON_COMPLETED: 'Concluiu uma aula',
       QUESTION_CORRECT: 'Acertou uma questão',

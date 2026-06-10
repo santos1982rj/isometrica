@@ -1,9 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/contexts/auth-context'
-import { api } from '@/lib/api'
+import { useAdminFinanceiro, useAdminUsuarios, useCourses } from '@/lib/queries'
 import type { AdminFinanceiro, UsuarioAdmin, Curso } from '@/lib/types'
 import {
   Users,
@@ -32,22 +31,10 @@ const item = {
 
 export default function AdminDashboardPage() {
   const { usuario } = useAuth()
-  const [financeiro, setFinanceiro] = useState<AdminFinanceiro | null>(null)
-  const [usuarios, setUsuarios] = useState<UsuarioAdmin[]>([])
-  const [cursos, setCursos] = useState<Curso[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    Promise.all([
-      api.financeiro.adminOverview().catch(() => null),
-      api.admin.usuarios().catch(() => [] as any),
-      api.courses.listar().catch(() => [] as any),
-    ]).then(([fin, users, courses]) => {
-      setFinanceiro(fin as any)
-      setUsuarios(users as any)
-      setCursos(courses as any)
-    }).finally(() => setLoading(false))
-  }, [])
+  const { data: financeiro, isLoading: loadingFinanceiro } = useAdminFinanceiro()
+  const { data: usuarios = [], isLoading: loadingUsuarios } = useAdminUsuarios()
+  const { data: cursos = [], isLoading: loadingCursos } = useCourses()
+  const loading = loadingFinanceiro || loadingUsuarios || loadingCursos
 
   const totalUsuarios = usuarios.length
   const cursosAtivos = cursos.length
@@ -65,7 +52,7 @@ export default function AdminDashboardPage() {
     data: new Date(u.createdAt).toLocaleDateString('pt-BR'),
   }))
 
-  const planData = financeiro?.planDistribution ?? []
+  const planData: AdminFinanceiro['planDistribution'] = financeiro?.planDistribution ?? []
   const maxPlanCount = Math.max(...planData.map(p => p.count), 1)
 
   if (loading) {

@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/contexts/auth-context'
-import { api } from '@/lib/api'
+import { useGamification } from '@/lib/queries'
+import type { Conquista, Missao } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
 import {
   Flame,
@@ -79,19 +79,13 @@ function getLevelColor(level: number) {
 
 export default function GamificacaoPage() {
   const { usuario } = useAuth()
-  const [profile, setProfile] = useState<any>(null)
-  const [carregando, setCarregando] = useState(true)
+  const { data: profileData, isLoading: carregando } = useGamification(usuario?.id ?? '')
 
-  useEffect(() => {
-    if (!usuario) return
-    api.gamification.perfil(usuario.id).then(setProfile).catch(console.error).finally(() => setCarregando(false))
-  }, [usuario])
-
-  const xp = profile?.xp ?? 2450
-  const level = profile?.level ?? 8
-  const streak = profile?.streak ?? 7
-  const achievements = profile?.achievements ?? achievementsList.filter(a => a.unlocked)
-  const missions = profile?.missions ?? mockMissions
+  const xp = profileData?.xp ?? 2450
+  const level = profileData?.level ?? 8
+  const streak = profileData?.streak ?? 7
+  const achievements: { name: string }[] = profileData?.achievements ?? achievementsList.filter(a => a.unlocked)
+  const missions: { progress: number; target: number }[] = profileData?.missions ?? mockMissions
 
   function getStreakNarrative(days: number) {
     if (days === 0) return { title: 'Hora de começar!', desc: 'Cada grande engenheiro começou com um primeiro passo. Que tal estudar hoje?', color: 'from-slate-400 to-slate-300' }
@@ -169,7 +163,7 @@ export default function GamificacaoPage() {
               <div className="mb-2 flex size-11 items-center justify-center rounded-xl bg-isometrica-info/10">
                 <Target className="size-5 text-isometrica-info" />
               </div>
-              <p className="font-display text-2xl font-bold tabular-nums">{missions.filter((m: any) => m.progress >= m.target).length}</p>
+              <p className="font-display text-2xl font-bold tabular-nums">{missions.filter((m) => m.progress >= m.target).length}</p>
               <p className="text-[10px] font-medium text-muted-foreground">Missões</p>
               <p className="mt-1 text-[10px] text-muted-foreground">{missions.length} ativas</p>
             </div>
@@ -203,7 +197,7 @@ export default function GamificacaoPage() {
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
             {achievementsList.map((ach) => {
-              const isUnlocked = ach.unlocked || achievements.some((a: any) => a.name === ach.name)
+              const isUnlocked = ach.unlocked || achievements.some((a) => a.name === ach.name)
               return (
                 <div
                   key={ach.name}
