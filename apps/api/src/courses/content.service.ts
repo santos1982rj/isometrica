@@ -29,8 +29,8 @@ export class ContentService {
   async createLesson(moduleId: string, data: { title: string; type: string; order: number; content?: string; videoUrl?: string; free?: boolean }) {
     const mod = await this.prisma.module.findUnique({ where: { id: moduleId } });
     if (!mod) throw new NotFoundException('Módulo não encontrado');
-    const { videoUrl, materials, ...rest } = data as any;
-    return this.prisma.lesson.create({ data: { ...rest, contentUrl: videoUrl, moduleId } });
+    const { videoUrl, title, type, order, content, free } = data;
+    return this.prisma.lesson.create({ data: { title, type, order, content, free, contentUrl: videoUrl, moduleId } });
   }
 
   async updateLesson(id: string, data: { title?: string; content?: string; videoUrl?: string }) {

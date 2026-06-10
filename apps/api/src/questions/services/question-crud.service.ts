@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import type { QuestionType, QuestionDifficulty, BloomLevel } from '../../generated/prisma/enums';
 
 @Injectable()
 export class QuestionCrudService {
@@ -55,9 +56,9 @@ export class QuestionCrudService {
   }) {
     const question = await this.prisma.question.create({
       data: {
-        text: data.text, type: (data.type as any) ?? 'MULTIPLA_ESCOLHA',
-        difficulty: (data.difficulty as any) ?? 'MEDIUM',
-        bloomLevel: (data.bloomLevel as any) ?? 'REMEMBER',
+        text: data.text, type: (data.type ?? 'MULTIPLA_ESCOLHA') as QuestionType,
+        difficulty: (data.difficulty ?? 'MEDIUM') as QuestionDifficulty,
+        bloomLevel: (data.bloomLevel ?? 'REMEMBER') as BloomLevel,
         estimatedTime: data.estimatedTime ?? 5,
         explanation: data.explanation, resolutionUrl: data.resolutionUrl,
         topicId: data.topicId, lessonId: data.lessonId, examId: data.examId,
@@ -71,7 +72,7 @@ export class QuestionCrudService {
     return question;
   }
 
-  async update(id: string, data: any) {
+  async update(id: string, data: Record<string, unknown>) {
     const q = await this.prisma.question.findUnique({ where: { id } });
     if (!q) throw new NotFoundException('Questão não encontrada');
     return this.prisma.question.update({ where: { id }, data, include: { topic: true, exam: true, alternatives: true, tags: true } });

@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import OpenAI from 'openai';
 import { ConfigService } from '@nestjs/config';
+import type { QuestionType, QuestionDifficulty, BloomLevel } from '../../generated/prisma/enums';
 
 const GROQ_BASE_URL = 'https://api.groq.com/openai/v1';
 const GROQ_MODEL = 'llama-3.3-70b-versatile';
@@ -57,24 +58,23 @@ export class QuestionGeneratorService {
     return created;
   }
 
-  async importQuestions(data: any[]) {
+  async importQuestions(data: Record<string, unknown>[]) {
     let created = 0; let failed = 0; const errors: string[] = []
     for (const q of data) {
       try {
         if (!q.text || !q.topicId) { failed++; errors.push(`Questão sem texto ou topicId`); continue }
         await this.prisma.question.create({
           data: {
-            text: q.text, type: q.type ?? 'MULTIPLA_ESCOLHA', difficulty: q.difficulty ?? 'MEDIUM',
-            bloomLevel: q.bloomLevel ?? 'REMEMBER', estimatedTime: q.estimatedTime ?? 5,
-            explanation: q.explanation, topicId: q.topicId, examId: q.examId,
+            text: q.text as string, type: ((q.type as string) ?? 'MULTIPLA_ESCOLHA') as QuestionType, difficulty: ((q.difficulty as string) ?? 'MEDIUM') as QuestionDifficulty,
+            bloomLevel: ((q.bloomLevel as string) ?? 'REMEMBER') as BloomLevel, estimatedTime: (q.estimatedTime as number) ?? 5,
+            explanation: q.explanation as string, topicId: q.topicId as string, examId: q.examId as string,
             status: 'PUBLICADA',
-            alternatives: q.alternatives ? { create: q.alternatives.map((a: any) => ({ text: a.text, isCorrect: a.isCorrect ?? false, feedback: a.feedback })) } : undefined,
-            tags: q.tags ? { create: q.tags.map((t: string) => ({ tag: t })) } : undefined,
-            stats: { create: {} },
+            alternatives: q.alternatives ? { create: (q.alternatives as { text: string; isCorrect: boolean; feedback?: string }[]).map((a) => ({ text: a.text, isCorrect: a.isCorrect ?? false, feedback: a.feedback })) } : undefined,
+            tags: q.tags ? { create: (q.tags as string[]).map((t) => ({ tag: t })) } : undefined,
           },
         })
         created++
-      } catch (e: any) { failed++; errors.push(e.message) }
+      } catch (e) { failed++; errors.push((e as Error).message) }
     }
     return { created, failed, errors: errors.slice(0, 10) }
   }
