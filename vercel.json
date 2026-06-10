@@ -1,8 +1,3 @@
 {
-  "framework": "nextjs",
-  "buildCommand": "pnpm --filter @isometrica/web build",
-  "installCommand": "pnpm install",
-  "env": {
-    "NEXT_PUBLIC_API_URL": "https://isometrica-api.onrender.com/api"
-  }
+  "rootDirectory": "apps/web"
 }
