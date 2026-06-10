@@ -51,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     await api.auth.logout().catch(() => {});
     setUsuario(null);
-    router.push('/auth/login');
+    router.push('/entrar');
   }, [router]);
 
   return (

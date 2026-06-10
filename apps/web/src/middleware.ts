@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-const publicRoutes = ['/', '/auth/login', '/auth/cadastro', '/auth/esqueceu-senha']
+const publicRoutes = ['/', '/entrar', '/cadastro', '/esqueceu-senha', '/recuperar-senha']
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -17,8 +17,8 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get('token')?.value
       ?? request.headers.get('authorization')?.replace('Bearer ', '')
 
-  if (!token && !pathname.startsWith('/auth/')) {
-    const loginUrl = new URL('/auth/login', request.url)
+  if (!token && !pathname.startsWith('/entrar') && !pathname.startsWith('/cadastro') && !pathname.startsWith('/esqueceu-senha') && !pathname.startsWith('/recuperar-senha')) {
+    const loginUrl = new URL('/entrar', request.url)
     loginUrl.searchParams.set('redirect', pathname)
     return NextResponse.redirect(loginUrl)
   }
