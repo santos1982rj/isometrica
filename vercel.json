@@ -1,5 +1,4 @@
 {
-  "rootDirectory": "apps/web",
   "buildCommand": "turbo build",
   "ignoreCommand": "npx turbo-ignore --fallback=HEAD^1"
 }
