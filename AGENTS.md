@@ -26,6 +26,7 @@ Plataforma inteligente de evolução acadêmica para estudantes de Engenharia, c
 | Redis | 7 | Cache + Event Bus |
 | shadcn/ui | latest | Design system |
 | Tailwind CSS | v4 | Estilização |
+| TanStack Query | ^5.101.0 | Data fetching |
 | Clerk | latest | Autenticação |
 | Zod | latest | Validação |
 | Docker | latest | Containerização |
@@ -84,7 +85,8 @@ Plataforma inteligente de evolução acadêmica para estudantes de Engenharia, c
 ### Monorepo
 - Turborepo + pnpm workspaces
 - `apps/web` (Next.js) e `apps/api` (NestJS)
-- `packages/`: domain, contracts, ui, config, analytics, ai, notifications
+- `packages/`: **contracts** (tipos compartilhados) e **ui** (cn, tokens) — únicos com runtime real
+- Pacotes mortos deletados: domain, config, ai, analytics, notifications (stubs vazios)
 
 ### Banco
 - PostgreSQL único para MVP (Neon gerenciado)
@@ -273,6 +275,45 @@ isometrica.eng.br (Cloudflare)
 
 ---
 
+### Sessão 5 — Refatoração Massiva (10/06/2026)
+
+#### Segurança
+- **Fallback JWT removido**: `configService.getOrThrow('JWT_SECRET')` com ≥ 32 chars
+- **`localStorage` removido do tutor**: cookie `httpOnly`
+- **`env.ts` expandido**: `GROQ_API_KEY`, `REDIS_URL`, `RESEND_API_KEY` required
+- **CORS com regex**: qualquer `*.eng.br`
+- **⚠️ Credenciais expostas**: senha Neon, GROQ_API_KEY, JWT_SECRET — pendente rotação manual
+
+#### Estrutura
+- **5 pacotes mortos deletados**: domain, config, ai, analytics, notifications
+- **`LearningService` (324 linhas)** → 4 serviços (enrollment, progress, certificate, attempt)
+- **`QuestionsService` (252 linhas)** → 4 serviços (crud, exam, stats, generator)
+- **`forwardRef` circular removido** via reordenação de imports
+- **25 componentes extraídos** de 5 páginas para `components/{dashboard,aulas,cursos,banco-questoes,gamificacao}/`
+
+#### Type Safety
+- **Zero `any` na API e frontend**: DTOs com class-validator, `api.ts` tipado
+- **`contracts` expandido**: 15+ interfaces (`Diagnostic`, `WeekPlan`, `ProfileResponse`, `QuestionStats`, `SimuladoResponse`, etc.)
+- **Enums Prisma** tipados nos DTOs e services
+
+#### TanStack Query
+- **QueryProvider era dead code** → **17 páginas migradas**, ~50 hooks em `@/lib/queries`
+- **Auth context**: `useEffect` → `useQuery` com `staleTime: 5min`
+- **Mutações com cache automático**: `useEnroll()`, `useSubmitAttempt()`, etc.
+
+#### CI/Quality
+- **CI**: `continue-on-error` removido, `turbo typecheck` adicionado
+- **`turbo.json`**: task `typecheck`, lint `"cache": false`
+- **Dockerfiles**: layer caching, `ARG NEXT_PUBLIC_API_URL`, `HEALTHCHECK`, `pnpm prune --prod`
+- **pnpm sincronizado** (`11.5.2`)
+- **`.vercelignore`**: exclui `.turbo` (26GB)
+
+#### Deploy
+- [isometrica.eng.br](https://isometrica.eng.br) em produção via Vercel
+- Deploys automáticos via GitHub (projeto `web`, `turbo build`)
+
+---
+
 ## Status Atual — 26 Rotas (Junho 2026)
 
 ### ESTUDANTE
@@ -338,7 +379,8 @@ isometrica.eng.br (Cloudflare)
 
 ## Pendências Conhecidas
 
-1. **Vercel rootDirectory**: corrigir para `apps/web` ou reconfigurar projeto
-2. **Render deploy**: confirmar que build automático funciona com `--path`
-3. **SSL/HTTPS**: garantir que Cloudflare → Vercel → Render esteja totalmente em HTTPS
-4. **Variáveis de ambiente**: replicar `.env.example` nos dashboards de Vercel e Render
+1. **Rotação de credenciais**: senha do Neon, GROQ_API_KEY e JWT_SECRET expostas no git — precisa gerar novos tokens nos dashboards
+2. **Vercel rootDirectory**: verificar se deploy automático está funcionando (projeto `web`, `turbo build`)
+3. **Render deploy**: confirmar que build automático da API funciona
+4. **SSL/HTTPS**: garantir que Cloudflare → Vercel → Render esteja totalmente em HTTPS
+5. **Variáveis de ambiente**: replicar `.env.example` nos dashboards de Vercel e Render
