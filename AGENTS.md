@@ -28,6 +28,12 @@ Plataforma inteligente de evolução acadêmica para estudantes de Engenharia, c
 | Tailwind CSS | v4 | Estilização |
 | Clerk | latest | Autenticação |
 | Zod | latest | Validação |
+| Docker | latest | Containerização |
+| Render | — | Host NestJS API |
+| Vercel | — | Host Next.js Frontend |
+| Cloudflare | — | DNS + Proxy |
+| Neon | — | PostgreSQL gerenciado |
+| GitHub Actions | — | CI/CD |
 
 ## Domínio — Entidades Principais
 
@@ -81,9 +87,14 @@ Plataforma inteligente de evolução acadêmica para estudantes de Engenharia, c
 - `packages/`: domain, contracts, ui, config, analytics, ai, notifications
 
 ### Banco
-- PostgreSQL único para MVP
+- PostgreSQL único para MVP (Neon gerenciado)
 - Réplica separada para BI (Metabase) quando escalar
 - PgVector para buscas semânticas da IA (futuro)
+
+### Deploy — Arquitetura em Produção
+```
+isometrica.eng.br → Cloudflare (DNS + proxy) → Vercel (Next.js) → proxy /api/* → Render (NestJS) → Neon (PostgreSQL)
+```
 
 ## Direção Visual — Isométrica
 
@@ -111,48 +122,160 @@ Plataforma inteligente de evolução acadêmica para estudantes de Engenharia, c
 
 - **skill-creator** — em `~/.config/opencode/skills/skill-creator/`, para criar/editar skills
 
-## Mudanças Realizadas (Sessão 09/06/2026)
+## Mudanças Realizadas — Todas as Sessões
 
-### Fase 0 — Hotfixes (4 bugs críticos corrigidos)
+---
+
+### Sessão 1 — Fundação (Fases 0–6)
+
+#### Fase 0 — Hotfixes (4 bugs críticos corrigidos)
 1. **Gamificação nunca funcionou**: handler em `gamification.handler.ts` escutava `QUESTION_ANSWERED`, mas o `LearningService` nunca emitia esse evento — emitia `QUESTION_CORRECT`/`QUESTION_INCORRECT`. Handler migrado.
 2. **esqueceuSenha type errado**: `api.ts` declarava `reset_token?` na resposta — API não retorna mais token. Tipo simplificado.
 3. **Cursos sem `@Public()`**: `CoursesController`, `ContentController`, `KnowledgeController` sem decorator — retornavam 401. Adicionado `@Public()` nos endpoints GET e search.
 4. **Scrollbar quebrada**: `hsl(var(--border))` inválido em `globals.css` — corrigido para `var(--border)`.
 
-### Fase 1 — Fundação (Packages Compartilhados)
+#### Fase 1 — Fundação (Packages Compartilhados)
 - **`@isometrica/contracts`**: 20+ tipos compartilhados (Usuario, Curso, Questao, etc.)
 - **`@isometrica/domain`**: Zod schemas (SignupSchema, LoginSchema, SubmitAttemptSchema, etc.)
 - **`@isometrica/ui`**: `cn()` utility, constantes de cores e breakpoints
 - **`@isometrica/config`**: Constantes de app, rotas de API, paginação
-- Frontend `types.ts` agora re-exporta de `@isometrica/contracts`
-- Frontend `utils.ts` agora re-exporta de `@isometrica/ui`
+- Frontend `types.ts` re-exporta de `@isometrica/contracts`
+- Frontend `utils.ts` re-exporta de `@isometrica/ui`
 - APIs e Web dependem dos 4 packages como `workspace:*`
 
-### Fase 2 — Design Refinamento
-1. **`tokens.css`**: Tokens separados do globals.css — tema inline, :root, .dark, tipografia
+#### Fase 2 — Design Refinamento
+1. **`tokens.css`**: Tokens separados do globals.css — tema inline, `:root`, `.dark`, tipografia
 2. **26 emojis substituídos** em 5 arquivos (`gamificacao`, `banco-questoes`, `cursos/[id]`, `dashboard`, `erros`) por lucide-react
 
-### Fase 3 — Refatoração Backend
+#### Fase 3 — Refatoração Backend
 1. **Global Exception Filter**: `AllExceptionsFilter` — padroniza erros com `{ statusCode, message, timestamp }`
 2. **DTOs com class-validator**: Criados para Courses (create/update/module/lesson), Learning (enroll/progress/attempt), Knowledge (subject/topic), Questions (create), Profile (update)
 3. **N+1 fixes**: `learning.service.ts` (`getNextLessons` — batching), `analytics.service.ts` (`getProfessorAnalytics` + `getCourseStudents` — batch + groupBy)
 
-### Fase 4 — Frontend
+#### Fase 4 — Frontend
 - **TanStack React Query**: Instalado, `QueryProvider` criado, configurado no layout raiz
 
-### Fase 5 — Testes
+#### Fase 5 — Testes
 - **API**: 16 testes passando (2 spec files)
 - **Frontend**: Vitest + Testing Library configurados, 3 testes do Button passando
 - **Cobertura total**: `pnpm test` no root executa ambos os apps
 
-### Fase 6 — Novas Features
+#### Fase 6 — Novas Features
 1. **Compartilhar Certificado no LinkedIn**: Botão em `/certificados` com `Share2` → LinkedIn share intent
 2. **Ritual de Streak (Narrativa)**: Card no `/gamificacao` com mensagens progressivas (0 → 60+ dias)
 3. **Modo Concurso**: Página `/concurso` com lista de simulados mock + KPIs; sidebar atualizada
 
+---
+
+### Sessão 2 — Segurança & Infraestrutura (09/06/2026)
+
+#### CI/CD
+- **GitHub Actions** (`.github/workflows/ci.yml`): executa `pnpm install`, TypeScript check, Prisma validate, build, test em todo PR/push na `main`
+
+#### Docker
+- **Dockerfile web**: multi-stage com Next.js standalone output (`node:22-alpine`), expõe porta 3000
+- **Dockerfile api**: multi-stage com NestJS build, expõe porta 4000
+- **docker-compose.yml**: Postgres 17 + Redis 7 + API com healthchecks, rede interna
+- **`.dockerignore`** em ambos os apps
+- **`.env.example`** com todas as variáveis documentadas
+
+#### Segurança
+- **CORS**: função customizada com allowlist de origens conhecidas + callback de validação de origin
+- **Validação de ambiente**: `validateEnv()` no bootstrap checa `DATABASE_URL`, `JWT_SECRET`, `REDIS_URL`, `CLERK_SECRET_KEY` — app falha rápido se faltar
+- **JWT**: segredo forte com 64 hex chars
+- **SanitizePipe**: sanitização XSS com `sanitize-html` em todas as entradas de texto
+- **Índices Prisma**: 37 índices em todas as FKs (migration `20260609223541_add_indexes`)
+- **Rate limiting**: `ThrottlerModule` global configurado para 60 requisições/minuto
+- **Cache headers**: `CacheHeaderInterceptor` global adiciona `Cache-Control` em todas as respostas GET
+
+#### API Docs
+- **Swagger/OpenAPI** disponível em `/api/docs` com metadata completa, tags por módulo
+
+#### Git Hooks
+- **Husky**: pre-commit hook roda lint-staged nos arquivos staged
+
+#### Frontend — Resiliência
+- **Middleware Next.js**: proteção de rotas (redireciona para `/` se não autenticado), `/api/*` público
+- **Error boundaries**: componente global `ErrorBoundary` + loading states com skeleton
+
+#### SEO
+- **OG tags**: metadata dinâmica em todas as páginas
+- **`sitemap.ts`**: geração automática de sitemap
+- **`robots.ts`**: configuração de robots.txt
+
+---
+
+### Sessão 3 — Auth & Eventos (09/06/2026)
+
+#### Autenticação
+- **Cookie httpOnly**: `Set-Cookie` com `httpOnly`, `secure`, `sameSite:none`(produção)/`lax`(desenvolvimento), `credentials:include`
+- **JwtStrategy**: extrai token de cookie (`jwt`) ou header `Bearer` — ambas as fontes funcionam
+
+#### Event Handlers
+- **`AiEventHandler`**: persiste recomendações no banco ao escutar `QUESTION_INCORRECT` e `ENROLLMENT_CREATED`
+- **`AnalyticsEventHandler`**: `trackEvent()` tratando 18 tipos de eventos diferentes
+
+#### Dashboards Reais
+- **Admin**: financeiro (MRR, churn), usuários (total, novos, ativos), cursos ativos
+- **Student**: profile, learning progress, analytics de performance
+
+#### Banco
+- **Migration `add_missing_event_types`**: adiciona 21 novos `EventType` ao enum
+
+#### Infra Packages (Stubs)
+- **`@isometrica/ai`**: estrutura para handlers de IA
+- **`@isometrica/analytics`**: estrutura para trackeamento de eventos
+- **`@isometrica/notifications`**: estrutura para notificações
+
+#### Testes Expandidos
+- **18 novos testes**:
+  - `AiEventHandler`: 5 testes (cria recomendação em `QUESTION_INCORRECT` e `ENROLLMENT_CREATED`, não cria em `QUESTION_CORRECT`, etc.)
+  - `AnalyticsEventHandler`: 5 testes (trackEvent com diferentes tipos, lida com eventos desconhecidos)
+  - `FinancialService`: 8 testes (cálculo de MRR, churn rate, assinaturas ativas, receita por período, etc.)
+- **Total: 34 testes API + 3 Frontend = 37 testes**
+
+---
+
+### Sessão 4 — Deploy & Correções Cross-Origin (10/06/2026)
+
+#### Build API
+- Corrigido `--tsConfigPath` → `--path` no `build` script (compatibilidade NestJS CLI v11)
+
+#### CORS cross-origin
+- `sameSite`: `'none'` em produção (`isometrica.eng.br` → `isometrica-api.onrender.com`)
+
+#### Next.js Proxy
+- `rewrites()` em `next.config.ts`: roteia `/api/*` para `API_BACKEND_URL` (Render)
+- `api.ts` no frontend: `baseURL` padrão mudado para `/api` (relativo), eliminando hardcode de origem
+
+#### Seed de Produção
+- Seed executado no Neon (PostgreSQL gerenciado):
+  - 3 usuários (admin, professor, aluno)
+  - 9 cursos
+  - 103 aulas
+  - 74 questões
+
+#### Deploy Vercel — Problema Conhecido
+- **Projeto Vercel criado**, domínio `isometrica.eng.br` configurado
+- Cloudflare na frente como DNS + proxy
+- **Primeiro deploy funcionou** via `turbo build` manual
+- **Redeploys falham**: `Root Directory` configurado como `.` em vez de `apps/web`
+- **Pendente**: corrigir rootDirectory ou migrar para monorepo setup do Vercel
+
+#### Arquitetura Final (Produção)
+```
+isometrica.eng.br (Cloudflare)
+  └→ Vercel (Next.js — apps/web)
+       └→ rewrite /api/* → Render (NestJS — apps/api)
+            └→ Neon (PostgreSQL)
+                 └→ Redis (gerenciado)
+```
+
+---
+
 ## Status Atual — 26 Rotas (Junho 2026)
 
-### 🎓 ESTUDANTE
+### ESTUDANTE
 | Página | O que faz | Status |
 |--------|-----------|--------|
 | `/dashboard` | KPIs, continuar estudos, proficiência, atividade, heatmap | ✅ |
@@ -170,27 +293,29 @@ Plataforma inteligente de evolução acadêmica para estudantes de Engenharia, c
 | `/banco-questoes` | Banco de Questões com árvore, filtros, estatísticas, modo domínio | ✅ |
 | `/concurso` | Modo Concurso/Vestibular com simulados cronometrados | ✅ |
 
-### 👨‍🏫 PROFESSOR
+### PROFESSOR
 | Página | O que faz | Status |
 |--------|-----------|--------|
 | `/professor/dashboard` | Overview com analytics reais (cursos, alunos, acertos) | ✅ |
 | `/professor/cursos` | Lista de cursos com gerenciar/excluir | ✅ |
-| `/professor/cursos/novo` | **Wizard completo**: curso → módulos → aulas → config | ✅ |
+| `/professor/cursos/novo` | Wizard completo: curso → módulos → aulas → config | ✅ |
 | `/professor/cursos/[id]` | Gerenciar módulos/aulas/questões (CRUD inline) | ✅ |
 
-### 🔧 ADMIN
+### ADMIN
 | Página | O que faz | Status |
 |--------|-----------|--------|
 | `/admin/dashboard` | Overview: plataforma (usuários, receita, cursos ativos) | ✅ |
 | `/admin/usuarios` | Gestão de usuários (listar, buscar, mudar papel, remover) | ✅ |
 | `/admin/financeiro` | MRR, assinaturas ativas, churn, pagamentos recentes | ✅ |
 
-### 🌐 Páginas Públicas
+### PÁGINAS PÚBLICAS
 | Página | O que faz | Status |
 |--------|-----------|--------|
 | `/` | Landing page (hero, features, planos, contato) | ✅ |
 | `/u/[id]` | Perfil público compartilhável (certificados, gamificação) | ✅ |
 | `/404` | Página não encontrada customizada | ✅ |
+
+---
 
 ## Lições do Projeto Anterior
 
@@ -200,3 +325,20 @@ Plataforma inteligente de evolução acadêmica para estudantes de Engenharia, c
   - **Design pesado** — glassmorfismo, muitas variantes, difícil de manter
   - **Eventos acoplados** — sem barramento central
 - A correção: event bus único, módulos isolados, design tokenizado enxuto
+
+---
+
+## Resumo de Testes
+
+| Categoria | Quantidade |
+|-----------|-----------|
+| API (Service specs) | 34 |
+| Frontend (Vitest) | 3 |
+| **Total** | **37** |
+
+## Pendências Conhecidas
+
+1. **Vercel rootDirectory**: corrigir para `apps/web` ou reconfigurar projeto
+2. **Render deploy**: confirmar que build automático funciona com `--path`
+3. **SSL/HTTPS**: garantir que Cloudflare → Vercel → Render esteja totalmente em HTTPS
+4. **Variáveis de ambiente**: replicar `.env.example` nos dashboards de Vercel e Render

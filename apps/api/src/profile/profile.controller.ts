@@ -2,6 +2,7 @@ import { Controller, Get, Put, Param, Body, UnauthorizedException } from '@nestj
 import { ProfileService } from './profile.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Public } from '../auth/decorators/public.decorator';
+import { UpdateProfileDto } from './dto';
 
 @Controller('profile')
 export class ProfileController {
@@ -14,13 +15,9 @@ export class ProfileController {
   }
 
   @Put()
-  updateProfile(@CurrentUser('id') userId: string, @Body() body: {
-    name?: string; bio?: string; title?: string; university?: string;
-    period?: number; lattes?: string; linkedin?: string; instagram?: string; twitter?: string;
-    imageUrl?: string;
-  }) {
+  updateProfile(@CurrentUser('id') userId: string, @Body() dto: UpdateProfileDto) {
     if (!userId) throw new UnauthorizedException();
-    return this.profileService.updateProfile(userId, body);
+    return this.profileService.updateProfile(userId, dto);
   }
 
   @Get('public/:id')

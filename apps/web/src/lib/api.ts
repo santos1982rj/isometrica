@@ -29,6 +29,10 @@ import type {
   ProfessorAnalytics, AdminFinanceiro, UsuarioAdmin, Matricula,
   Certificado, Plano, Assinatura, NextLessonsResponse, ProgressoCurso,
   NotaResponse, Recomendacao, Enrollment,
+  Diagnostic, WeekPlan, LeaderboardEntry, ProfileResponse, PublicProfileResponse,
+  StudentAnalytics, EventLog, QuestionTreeItem, QuestionTag,
+  ExamListResponse, ExamBoard, QuestionStats, TopicMastery,
+  SimuladoResponse, PurchaseResponse, ImportQuestionsInput,
 } from './types';
 
 export const api = {
@@ -81,7 +85,7 @@ export const api = {
       request<Aula>(`/lessons/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     removerAula: (id: string) => request<{ message: string }>(`/lessons/${id}`, { method: 'DELETE' }),
 
-    comprar: (courseId: string) => request<{ purchase: any; enrolled: boolean }>(`/courses/${courseId}/purchase`, { method: 'POST' }),
+    comprar: (courseId: string) => request<PurchaseResponse>(`/courses/${courseId}/purchase`, { method: 'POST' }),
 
     verificarAcesso: (courseId: string) =>
       request<{ hasAccess: boolean; needsPurchase: boolean; price: number; premium: boolean; certificateEnabled: boolean }>(`/courses/${courseId}/access`),
@@ -94,8 +98,8 @@ export const api = {
 
   learning: {
     modelo: (userId: string) => request<{ id: string; userId: string; topicId: string; proficiency: number; topic?: { id: string; name: string; subject?: { id: string; name: string } } }[]>(`/learning/model/${userId}`),
-    diagnosticos: (userId: string) => request<any[]>(`/learning/diagnostics/${userId}`),
-    criarDiagnostico: (userId: string) => request<any>(`/learning/diagnostics/${userId}`, { method: 'POST' }),
+    diagnosticos: (userId: string) => request<Diagnostic[]>(`/learning/diagnostics/${userId}`),
+    criarDiagnostico: (userId: string) => request<Diagnostic>(`/learning/diagnostics/${userId}`, { method: 'POST' }),
     matricular: (userId: string, courseId: string) =>
       request<Enrollment>('/learning/enroll', { method: 'POST', body: JSON.stringify({ userId, courseId }) }),
     verificarMatricula: (userId: string, courseId: string) =>
@@ -103,10 +107,10 @@ export const api = {
     matriculas: (userId: string) => request<Enrollment[]>(`/learning/enrollments/${userId}`),
     enviarTentativa: (data: { userId: string; questionId: string; selectedId: string; correct: boolean }) =>
       request<{ id: string }>('/learning/attempts', { method: 'POST', body: JSON.stringify(data) }),
-    erros: (userId: string) => request<any[]>(`/learning/errors/${userId}`),
+    erros: (userId: string) => request<Questao[]>(`/learning/errors/${userId}`),
     limparErros: (userId: string) => request<{ message: string }>(`/learning/errors/${userId}/clear`, { method: 'POST' }),
     proximasAulas: (userId: string) => request<NextLessonsResponse>(`/learning/next-lessons/${userId}`),
-    planoSemanal: (userId: string) => request<any>(`/learning/week-plan/${userId}`),
+    planoSemanal: (userId: string) => request<WeekPlan>(`/learning/week-plan/${userId}`),
     salvarAnotacao: (userId: string, lessonId: string, notes: string) =>
       request<NotaResponse>('/learning/notes', { method: 'POST', body: JSON.stringify({ userId, lessonId, notes }) }),
     anotacao: (userId: string, lessonId: string) =>
@@ -123,7 +127,7 @@ export const api = {
   conteudo: {
     aula: (id: string) => request<Aula>(`/lessons/${id}`),
     questoes: (id: string) => request<Questao[]>(`/lessons/${id}/questions`),
-    criarQuestao: (data: { text: string; topicId: string; difficulty: string; bloomLevel: string; explanation?: string; alternatives: { text: string; isCorrect: boolean }[] }) =>
+    criarQuestao: (data: ImportQuestionsInput) =>
       request<Questao>('/questions', { method: 'POST', body: JSON.stringify(data) }),
   },
 
@@ -137,8 +141,8 @@ export const api = {
 
   analytics: {
     professor: () => request<ProfessorAnalytics>('/analytics/professor'),
-    cursoAlunos: (courseId: string) => request<any[]>(`/analytics/professor/courses/${courseId}/students`),
-    eventos: (userId: string) => request<{ id: string; type: string; metadata: any; createdAt: string }[]>(`/analytics/events/${userId}`),
+    cursoAlunos: (courseId: string) => request<StudentAnalytics[]>(`/analytics/professor/courses/${courseId}/students`),
+    eventos: (userId: string) => request<EventLog[]>(`/analytics/events/${userId}`),
     sumario: () => request<{ type: string; _count: { id: number } }[]>('/analytics/summary'),
   },
 
@@ -148,13 +152,14 @@ export const api = {
       request<PerfilGameficacao>(`/gamification/profile/${userId}/xp/${amount}`, { method: 'POST' }),
     atualizarStreak: (userId: string) =>
       request<PerfilGameficacao>(`/gamification/profile/${userId}/streak`, { method: 'POST' }),
-    leaderboard: (limit = 10) => request<any[]>(`/gamification/leaderboard?limit=${limit}`),
+    leaderboard: (limit = 10) => request<LeaderboardEntry[]>(`/gamification/leaderboard?limit=${limit}`),
   },
 
   profile: {
-    me: () => request<any>('/profile'),
-    atualizar: (data: any) => request<any>('/profile', { method: 'PUT', body: JSON.stringify(data) }),
-    publico: (id: string) => request<any>(`/profile/public/${id}`),
+    me: () => request<ProfileResponse>('/profile'),
+    atualizar: (data: { name?: string; bio?: string; title?: string; university?: string; period?: number; lattes?: string; linkedin?: string; instagram?: string; twitter?: string; imageUrl?: string }) =>
+      request<ProfileResponse>('/profile', { method: 'PUT', body: JSON.stringify(data) }),
+    publico: (id: string) => request<PublicProfileResponse>(`/profile/public/${id}`),
   },
 
   admin: {
@@ -166,20 +171,23 @@ export const api = {
   },
 
   questions: {
-    listar: (params?: Record<string, string>) => request<any>(`/questions?${new URLSearchParams(params ?? {}).toString()}`),
-    obter: (id: string) => request<any>(`/questions/${id}`),
-    criar: (data: any) => request<any>('/questions', { method: 'POST', body: JSON.stringify(data) }),
-    atualizar: (id: string, data: any) => request<any>(`/questions/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-    remover: (id: string) => request<any>(`/questions/${id}`, { method: 'DELETE' }),
-    arvore: () => request<any[]>('/questions/tree'),
-    tags: () => request<any[]>('/questions/tags'),
-    exames: (params?: Record<string, string>) => request<any>(`/questions/exams?${new URLSearchParams(params ?? {}).toString()}`),
-    criarExame: (data: any) => request<any>('/questions/exams', { method: 'POST', body: JSON.stringify(data) }),
-    stats: (id: string) => request<any>(`/questions/stats/${id}`),
-    dominio: (topicId: string) => request<any>(`/questions/mastery/${topicId}`),
-    simulado: (examId: string, limit = 10) => request<any>(`/questions/simulado/${examId}?limit=${limit}`),
+    listar: (params?: Record<string, string>) => request<{ data: Questao[]; total: number; page: number; totalPages: number }>(`/questions?${new URLSearchParams(params ?? {}).toString()}`),
+    obter: (id: string) => request<Questao>(`/questions/${id}`),
+    criar: (data: { text: string; topicId: string; difficulty: string; bloomLevel: string; explanation?: string; alternatives: { text: string; isCorrect: boolean }[] }) =>
+      request<Questao>('/questions', { method: 'POST', body: JSON.stringify(data) }),
+    atualizar: (id: string, data: Partial<{ text: string; topicId: string; difficulty: string; bloomLevel: string; explanation: string; alternatives: { text: string; isCorrect: boolean }[] }>) =>
+      request<Questao>(`/questions/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    remover: (id: string) => request<{ message: string }>(`/questions/${id}`, { method: 'DELETE' }),
+    arvore: () => request<QuestionTreeItem[]>('/questions/tree'),
+    tags: () => request<QuestionTag[]>('/questions/tags'),
+    exames: (params?: Record<string, string>) => request<{ exams: ExamListResponse[]; total: number }>(`/questions/exams?${new URLSearchParams(params ?? {}).toString()}`),
+    criarExame: (data: { title: string; description?: string; board: string; year?: string; questionIds: string[] }) =>
+      request<ExamListResponse>('/questions/exams', { method: 'POST', body: JSON.stringify(data) }),
+    stats: (id: string) => request<QuestionStats>(`/questions/stats/${id}`),
+    dominio: (topicId: string) => request<TopicMastery>(`/questions/mastery/${topicId}`),
+    simulado: (examId: string, limit = 10) => request<SimuladoResponse>(`/questions/simulado/${examId}?limit=${limit}`),
     gerarComIA: (topicId: string, count = 3, difficulty?: string) =>
-      request<any>(`/questions/generate/${topicId}`, { method: 'POST', body: JSON.stringify({ count, difficulty }) }),
+      request<Questao[]>(`/questions/generate/${topicId}`, { method: 'POST', body: JSON.stringify({ count, difficulty }) }),
   },
 
   ai: {

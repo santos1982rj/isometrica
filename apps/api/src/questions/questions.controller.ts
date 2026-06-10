@@ -4,6 +4,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { Public } from '../auth/decorators/public.decorator';
 import { UserRole } from '../generated/prisma/enums';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { CreateQuestionDto, UpdateQuestionDto, QuestionFiltersDto, CreateExamDto } from './dto';
 
 @Controller('questions')
 export class QuestionsController {
@@ -11,7 +12,7 @@ export class QuestionsController {
 
   @Get()
   @Public()
-  list(@Query() filters: any) {
+  list(@Query() filters: QuestionFiltersDto) {
     return this.questionsService.list(filters);
   }
 
@@ -29,7 +30,7 @@ export class QuestionsController {
 
   @Get('exams')
   @Public()
-  listExams(@Query() filters: any) {
+  listExams(@Query() filters: QuestionFiltersDto) {
     return this.questionsService.listExams(filters);
   }
 
@@ -64,14 +65,14 @@ export class QuestionsController {
 
   @Post()
   @Roles(UserRole.PROFESSOR, UserRole.ADMIN)
-  create(@Body() body: any) {
-    return this.questionsService.create(body);
+  create(@Body() dto: CreateQuestionDto) {
+    return this.questionsService.create(dto);
   }
 
   @Put(':id')
   @Roles(UserRole.PROFESSOR, UserRole.ADMIN)
-  update(@Param('id') id: string, @Body() body: any) {
-    return this.questionsService.update(id, body);
+  update(@Param('id') id: string, @Body() dto: UpdateQuestionDto) {
+    return this.questionsService.update(id, dto);
   }
 
   @Delete(':id')
@@ -88,13 +89,13 @@ export class QuestionsController {
 
   @Post('exams')
   @Roles(UserRole.PROFESSOR, UserRole.ADMIN)
-  createExam(@Body() body: any) {
-    return this.questionsService.createExam(body);
+  createExam(@Body() dto: CreateExamDto) {
+    return this.questionsService.createExam(dto);
   }
 
   @Post('import')
   @Roles(UserRole.PROFESSOR, UserRole.ADMIN)
-  importQuestions(@Body() body: { questions: any[] }) {
-    return this.questionsService.importQuestions(body.questions);
+  importQuestions(@Body() body: Record<string, unknown>) {
+    return this.questionsService.importQuestions(body.questions as Record<string, unknown>[]);
   }
 }

@@ -1,0 +1,16 @@
+node_modules
+.turbo
+.next
+apps/**/.next
+apps/**/node_modules
+packages/**/node_modules
+.turbo
+.git
+.gitignore
+.gitattributes
+AGENTS.md
+IDEIAS.md
+PLANO_IMPLEMENTACAO.md
+README.md
+tmp
+*.log

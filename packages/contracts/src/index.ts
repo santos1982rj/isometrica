@@ -5,6 +5,13 @@ export interface Usuario {
   role: 'STUDENT' | 'PROFESSOR' | 'ADMIN'
   university?: string | null
   period?: number | null
+  title?: string | null
+  bio?: string | null
+  lattes?: string | null
+  linkedin?: string | null
+  instagram?: string | null
+  twitter?: string | null
+  imageUrl?: string | null
   createdAt?: string
 }
 
@@ -252,4 +259,142 @@ export interface NextLessonsResponse {
     proficiency: number
     topic?: { id: string; name: string }
   }[]
+}
+
+export interface Diagnostic {
+  id: string
+  userId: string
+  snapshot: Record<string, number>
+  createdAt: string
+}
+
+export interface WeekPlan {
+  weekStart: string
+  days: {
+    date: string
+    lessons: { lessonId: string; lessonTitle: string; courseName: string; courseId: string }[]
+  }[]
+}
+
+export interface LeaderboardEntry {
+  userId: string
+  name: string | null
+  imageUrl: string | null
+  xp: number
+  level: number
+  streak: number
+  rank: number
+}
+
+export interface ProfileResponse {
+  user: Usuario
+  gamification: { xp: number; level: number; streak: number } | null
+  certificates: Certificado[]
+  enrollments: { id: string; courseId: string; courseName: string; progress: number }[]
+  stats: {
+    totalAttempts: number
+    correctAttempts: number
+    accuracy: number
+    totalCertificates: number
+    coursesCreated: number
+  }
+}
+
+export interface PublicProfileResponse {
+  user: {
+    id: string
+    name: string | null
+    imageUrl: string | null
+    role: string
+    title: string | null
+    bio: string | null
+    lattes: string | null
+    linkedin: string | null
+    instagram: string | null
+    twitter: string | null
+    createdAt: string
+  }
+  certificates: { id: string; title: string; proficiency: number; totalHours: number; courseName: string; createdAt: string }[]
+  gamification: { xp: number; level: number; streak: number } | null
+  coursesCreated: { id: string; name: string; description: string; category: string | null }[]
+}
+
+export interface StudentAnalytics {
+  id: string
+  name: string | null
+  email: string
+  accuracy: number
+  totalAttempts: number
+  lastActivity: string
+}
+
+export interface EventLog {
+  id: string
+  type: string
+  metadata: Record<string, unknown>
+  createdAt: string
+}
+
+export interface QuestionTreeItem {
+  id: string
+  name: string
+  children?: { id: string; name: string; questionCount: number }[]
+}
+
+export interface QuestionTag {
+  id: string
+  name: string
+  count: number
+}
+
+export interface ExamListResponse {
+  id: string
+  title: string
+  description: string | null
+  board: string
+  year: string | null
+  questionCount: number
+  createdAt: string
+}
+
+export interface ExamBoard {
+  id: string
+  name: string
+  questionCount: number
+}
+
+export interface QuestionStats {
+  totalAttempts: number
+  correctAttempts: number
+  accuracy: number
+  difficultyDistribution: { difficulty: string; count: number }[]
+  bloomDistribution: { level: string; count: number }[]
+}
+
+export interface TopicMastery {
+  proficiency: number
+  totalQuestions: number
+  correctAnswers: number
+  recentAttempts: { correct: boolean; createdAt: string }[]
+}
+
+export interface SimuladoResponse {
+  exam: { id: string; title: string }
+  questions: Questao[]
+  totalQuestions: number
+  timeLimit: number | null
+}
+
+export interface PurchaseResponse {
+  purchase: { id: string; status: string }
+  enrolled: boolean
+}
+
+export interface ImportQuestionsInput {
+  text: string
+  topicId: string
+  difficulty: string
+  bloomLevel: string
+  explanation?: string
+  alternatives: { text: string; isCorrect: boolean }[]
 }

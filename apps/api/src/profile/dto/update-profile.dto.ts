@@ -3,7 +3,7 @@ import { IsString, IsOptional, IsNumber, Min } from 'class-validator';
 export class UpdateProfileDto {
   @IsString()
   @IsOptional()
-  nome?: string;
+  name?: string;
 
   @IsString()
   @IsOptional()
@@ -11,10 +11,34 @@ export class UpdateProfileDto {
 
   @IsString()
   @IsOptional()
-  universidade?: string;
+  title?: string;
+
+  @IsString()
+  @IsOptional()
+  university?: string;
 
   @IsNumber()
   @Min(1)
   @IsOptional()
-  periodo?: number;
+  period?: number;
+
+  @IsString()
+  @IsOptional()
+  lattes?: string;
+
+  @IsString()
+  @IsOptional()
+  linkedin?: string;
+
+  @IsString()
+  @IsOptional()
+  instagram?: string;
+
+  @IsString()
+  @IsOptional()
+  twitter?: string;
+
+  @IsString()
+  @IsOptional()
+  imageUrl?: string;
 }

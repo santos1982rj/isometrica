@@ -1,11 +1,12 @@
-import { IsString, IsEnum, IsOptional, IsArray, ValidateNested, MinLength } from 'class-validator';
+import { IsString, IsBoolean, IsOptional, IsArray, ValidateNested, MinLength, IsEnum } from 'class-validator';
 import { Type } from 'class-transformer';
+import { QuestionDifficulty, BloomLevel } from '../../generated/prisma/enums';
 
 class AlternativeDto {
   @IsString()
   text!: string;
 
-  @IsString()
+  @IsBoolean()
   isCorrect!: boolean;
 }
 
@@ -17,12 +18,12 @@ export class CreateQuestionDto {
   @IsString()
   topicId!: string;
 
-  @IsString()
-  difficulty!: string;
+  @IsEnum(QuestionDifficulty)
+  difficulty!: QuestionDifficulty;
 
-  @IsString()
+  @IsEnum(BloomLevel)
   @IsOptional()
-  bloomLevel?: string;
+  bloomLevel?: BloomLevel;
 
   @IsString()
   @IsOptional()

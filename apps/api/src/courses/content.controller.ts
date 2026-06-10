@@ -4,6 +4,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { Public } from '../auth/decorators/public.decorator';
 import { UserRole } from '../generated/prisma/enums';
 import { SanitizePipe } from '../common/pipes/sanitize.pipe';
+import { CreateQuestionDto } from '../questions/dto/create-question.dto';
 
 @Controller()
 export class ContentController {
@@ -37,15 +38,8 @@ export class ContentController {
 
   @Post('questions')
   @Roles(UserRole.PROFESSOR, UserRole.ADMIN)
-  createQuestion(@Body() body: {
-    text: string
-    topicId: string
-    difficulty: string
-    bloomLevel: string
-    explanation?: string
-    alternatives: { text: string; isCorrect: boolean }[]
-  }) {
-    return this.contentService.createQuestion(body);
+  createQuestion(@Body() dto: CreateQuestionDto) {
+    return this.contentService.createQuestion(dto);
   }
 
   // Modules

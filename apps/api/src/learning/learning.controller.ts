@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { LearningService } from './learning.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { EnrollUserDto, MarkProgressDto, SubmitAttemptDto } from './dto';
+import { EnrollUserDto, MarkProgressDto, SubmitAttemptDto, SaveNoteDto } from './dto';
 
 @Controller('learning')
 export class LearningController {
@@ -53,8 +53,8 @@ export class LearningController {
   }
 
   @Post('notes')
-  saveNote(@Body() body: { userId: string; lessonId: string; notes: string }) {
-    return this.learningService.saveNote(body.userId, body.lessonId, body.notes);
+  saveNote(@Body() dto: SaveNoteDto) {
+    return this.learningService.saveNote(dto.userId, dto.lessonId, dto.notes);
   }
 
   @Get('notes/:userId/:lessonId')

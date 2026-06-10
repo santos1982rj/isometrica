@@ -68,9 +68,7 @@ function TutorContent() {
 
       await api.ai.enviarMensagem(id!, 'user', texto);
 
-      // Inicia streaming
-      const token = localStorage.getItem('token');
-      const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
+      // Inicia streaming via proxy Next.js (cookie httpOnly enviado automaticamente)
       const msgId = crypto.randomUUID();
 
       const msgPlaceholder: Mensagem = {
@@ -79,10 +77,11 @@ function TutorContent() {
       setMensagens((prev) => [...prev, msgPlaceholder]);
       setStreamContent('');
 
-      const response = await fetch(`${API_URL}/ai/conversations/${id}/stream`, {
+      const response = await fetch(`/api/ai/conversations/${id}/stream`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ role: 'user', content: texto }),
+        credentials: 'include',
       });
 
       const reader = response.body?.getReader();

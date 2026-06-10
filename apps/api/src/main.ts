@@ -12,19 +12,21 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
 
-  const allowedOrigins = process.env.CORS_ORIGIN?.split(',').map(s => s.trim()) ?? [
-    'http://localhost:3000',
-    'https://isometrica.vercel.app',
-    'https://isometrica.eng.br',
-  ];
+const allowedOrigins = process.env.CORS_ORIGIN?.split(',').map(s => s.trim()) ?? [
+  'http://localhost:3000',
+  'https://isometrica.vercel.app',
+  'https://isometrica.eng.br',
+  /^https:\/\/.*-isometrica\.vercel\.app$/,
+];
 
   app.enableCors({
     origin(origin: string | undefined, callback: (err: Error | null, allow?: string | boolean) => void) {
-      if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
-        callback(null, origin ?? true);
-      } else {
-        callback(null, false);
-      }
+      if (!origin) return callback(null, true);
+      const allowed = allowedOrigins.some(a => {
+        if (a instanceof RegExp) return a.test(origin);
+        return a === origin;
+      });
+      callback(null, allowed || false);
     },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     credentials: true,

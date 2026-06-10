@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import type { QuestionDifficulty, BloomLevel } from '../generated/prisma/enums';
 
 @Injectable()
 export class ContentService {
@@ -96,8 +97,8 @@ export class ContentService {
   async createQuestion(data: {
     text: string
     topicId: string
-    difficulty: string
-    bloomLevel: string
+    difficulty: QuestionDifficulty
+    bloomLevel?: BloomLevel
     explanation?: string
     alternatives: { text: string; isCorrect: boolean }[]
   }) {
@@ -105,8 +106,8 @@ export class ContentService {
       data: {
         text: data.text,
         topicId: data.topicId,
-        difficulty: data.difficulty as any,
-        bloomLevel: data.bloomLevel as any,
+        difficulty: data.difficulty,
+        bloomLevel: data.bloomLevel,
         explanation: data.explanation,
         alternatives: { create: data.alternatives },
       },
