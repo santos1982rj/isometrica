@@ -30,6 +30,7 @@ export function useTutorChat({ initialValue = '' }: UseTutorChatOptions = {}): U
   const [streamContent, setStreamContent] = useState('');
   const [carregando, setCarregando] = useState(true);
   const fimRef = useRef<HTMLDivElement>(null);
+  const loadedConvRef = useRef<string | null>(null);
 
   const { data: conversasList } = useConversations(usuario?.id ?? '');
   const { data: conversaData } = useConversation(conversaId ?? '');
@@ -42,11 +43,13 @@ export function useTutorChat({ initialValue = '' }: UseTutorChatOptions = {}): U
     }
   }, [conversasList, conversaId]);
 
+  // Load conversation messages only on first load per conversation
   useEffect(() => {
-    if (conversaData?.messages && !enviando) {
+    if (conversaData?.messages && conversaId && loadedConvRef.current !== conversaId) {
       setMensagens(conversaData.messages as Mensagem[]);
+      loadedConvRef.current = conversaId;
     }
-  }, [conversaData, enviando]);
+  }, [conversaData, conversaId]);
 
   useEffect(() => {
     if (conversasList) {
