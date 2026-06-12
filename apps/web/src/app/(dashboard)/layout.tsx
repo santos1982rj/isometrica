@@ -101,7 +101,7 @@ function SearchBar() {
     setQuery(val)
     if (val.length < 2) { setResults(null); setOpen(false); return }
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api'
+      const API_URL = process.env.NEXT_PUBLIC_API_URL ?? '/api'
       const res = await fetch(`${API_URL}/courses/search/${encodeURIComponent(val)}`)
       if (res.ok) { const data = await res.json(); setResults(data.results); setOpen(true) }
     } catch {}

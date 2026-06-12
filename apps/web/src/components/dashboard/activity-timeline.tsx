@@ -46,8 +46,8 @@ export function ActivityTimeline({ eventos }: ActivityTimelineProps) {
         {activityEvents.length === 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">Nenhuma atividade recente</p>
         ) : (
-          activityEvents.map((act, i) => (
-            <div key={act.title} className="flex items-start gap-3 py-2.5">
+            activityEvents.map((act, i) => (
+            <div key={`${act.title}-${i}`} className="flex items-start gap-3 py-2.5">
               <div className="flex flex-col items-center gap-0.5 pt-1">
                 <div className={`size-2 rounded-full ${act.color} ${i === 0 ? 'animate-pulse' : ''}`} />
                 {i < activityEvents.length - 1 && <div className="mt-0.5 h-full w-0.5 bg-border" />}
