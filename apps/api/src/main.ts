@@ -4,6 +4,7 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { validateEnv } from './env';
+import { SanitizePipe } from './common/pipes/sanitize.pipe';
 
 validateEnv();
 
@@ -35,6 +36,7 @@ const allowedOrigins = process.env.CORS_ORIGIN?.split(',').map(s => s.trim()) ??
   app.use(cookieParser());
 
   app.useGlobalPipes(
+    new SanitizePipe(),
     new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
   );
 

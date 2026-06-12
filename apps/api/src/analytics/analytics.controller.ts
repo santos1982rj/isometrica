@@ -1,16 +1,17 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, ValidationPipe } from '@nestjs/common';
 import { AnalyticsService } from './analytics.service';
-import { EventType } from '../generated/prisma/enums';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { UserRole } from '../generated/prisma/enums';
+import { UserRole, EventType } from '../generated/prisma/enums';
+import { TrackEventDto } from './dto/track-event.dto';
 
 @Controller('analytics')
 export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
   @Post('events')
-  trackEvent(@Body() body: { userId: string; type: EventType; metadata?: Record<string, unknown> }) {
-    return this.analyticsService.trackEvent(body.userId, body.type, body.metadata);
+  @Roles(UserRole.ADMIN)
+  trackEvent(@Body(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true })) dto: TrackEventDto) {
+    return this.analyticsService.trackEvent(dto.userId, dto.type as EventType, dto.metadata);
   }
 
   @Get('events/:userId')

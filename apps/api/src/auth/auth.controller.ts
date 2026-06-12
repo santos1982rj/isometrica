@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Post, Res, Req } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { Response, Request } from 'express';
 import { AuthService } from './auth.service';
 import { SignupDto } from './dto/signup.dto';
@@ -22,6 +23,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('cadastro')
   async cadastro(@Body() dto: SignupDto, @Res({ passthrough: true }) res: Response) {
     const result = await this.authService.cadastro(dto);
@@ -30,6 +32,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('login')
   async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
     const result = await this.authService.login(dto);
@@ -38,12 +41,14 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('esqueceu-senha')
   esqueceuSenha(@Body() dto: EsqueceuSenhaDto) {
     return this.authService.esqueceuSenha(dto.email);
   }
 
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('recuperar-senha')
   recuperarSenha(@Body() dto: RecuperarSenhaDto) {
     return this.authService.recuperarSenha(dto.token, dto.novaSenha);
