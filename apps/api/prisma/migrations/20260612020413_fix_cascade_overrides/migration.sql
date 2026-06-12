@@ -1,17 +1,26 @@
--- DropForeignKey
-ALTER TABLE "Certificate" DROP CONSTRAINT "Certificate_courseId_fkey";
+-- This migration duplicates the previous cascade override migration in some branches.
+-- Keep it idempotent so fresh environments can apply the full migration history safely.
+ALTER TABLE "Certificate" DROP CONSTRAINT IF EXISTS "Certificate_courseId_fkey";
+ALTER TABLE "Payment" DROP CONSTRAINT IF EXISTS "Payment_subscriptionId_fkey";
 
--- DropForeignKey
-ALTER TABLE "Payment" DROP CONSTRAINT "Payment_subscriptionId_fkey";
-
--- AlterTable
 ALTER TABLE "Certificate" ALTER COLUMN "courseId" DROP NOT NULL;
 
--- CreateIndex
-CREATE INDEX "SimuladoAnswer_questionId_idx" ON "SimuladoAnswer"("questionId");
+CREATE INDEX IF NOT EXISTS "SimuladoAnswer_questionId_idx" ON "SimuladoAnswer"("questionId");
 
--- AddForeignKey
-ALTER TABLE "Payment" ADD CONSTRAINT "Payment_subscriptionId_fkey" FOREIGN KEY ("subscriptionId") REFERENCES "Subscription"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'Payment_subscriptionId_fkey'
+  ) THEN
+    ALTER TABLE "Payment" ADD CONSTRAINT "Payment_subscriptionId_fkey" FOREIGN KEY ("subscriptionId") REFERENCES "Subscription"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END $$;
 
--- AddForeignKey
-ALTER TABLE "Certificate" ADD CONSTRAINT "Certificate_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'Certificate_courseId_fkey'
+  ) THEN
+    ALTER TABLE "Certificate" ADD CONSTRAINT "Certificate_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END $$;

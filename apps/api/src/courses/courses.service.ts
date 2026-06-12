@@ -6,17 +6,17 @@ export class CoursesService {
   constructor(private readonly prisma: PrismaService) {}
 
   findAll() {
-    return this.prisma.course.findMany({ include: { subject: true, modules: true } });
+    return this.prisma.course.findMany({ include: { subject: true, modules: true, professor: true } });
   }
 
   findById(id: string) {
     return this.prisma.course.findUnique({
       where: { id },
-      include: { subject: true, modules: { include: { lessons: { orderBy: { order: 'asc' } } } } },
+      include: { subject: true, professor: true, modules: { include: { lessons: { orderBy: { order: 'asc' } } } } },
     });
   }
 
-  async create(data: { name: string; description: string; category?: string; imageUrl?: string; color?: string; estimatedHours?: number; level?: string; premium?: boolean; certificateEnabled?: boolean; price?: number }) {
+  async create(data: { name: string; description: string; category?: string; imageUrl?: string; color?: string; estimatedHours?: number; level?: string; premium?: boolean; certificateEnabled?: boolean; price?: number }, professorId?: string) {
     let subjectId: string | undefined = undefined;
 
     if (data.category) {
@@ -35,8 +35,9 @@ export class CoursesService {
         imageUrl: data.imageUrl,
         category: data.category,
         subjectId: subjectId,
+        professorId,
       },
-      include: { subject: true },
+      include: { subject: true, professor: true },
     });
   }
 
@@ -57,7 +58,7 @@ export class CoursesService {
     return this.prisma.course.update({
       where: { id },
       data: { ...data, subjectId },
-      include: { subject: true, modules: { include: { lessons: { orderBy: { order: 'asc' } } } } },
+      include: { subject: true, professor: true, modules: { include: { lessons: { orderBy: { order: 'asc' } } } } },
     });
   }
 
@@ -97,12 +98,12 @@ export class CoursesService {
     if (!course.premium) throw new ConflictException('Este curso não requer compra avulsa');
 
     const existing = await this.prisma.purchase.findFirst({
-      where: { userId, itemType: 'course', itemId: courseId },
+      where: { userId, OR: [{ courseId }, { itemType: 'course', itemId: courseId }] },
     });
     if (existing) throw new ConflictException('Você já comprou este curso');
 
     const purchase = await this.prisma.purchase.create({
-      data: { userId, itemType: 'course', itemId: courseId, amount: course.price },
+      data: { userId, itemType: 'course', itemId: courseId, courseId, amount: course.price },
     });
 
     // Auto-enroll
@@ -130,7 +131,7 @@ export class CoursesService {
     // Premium courses: check purchase or subscription
     const [purchase, subscription] = await Promise.all([
       this.prisma.purchase.findFirst({
-        where: { userId, itemType: 'course', itemId: courseId },
+        where: { userId, OR: [{ courseId }, { itemType: 'course', itemId: courseId }] },
       }),
       this.prisma.subscription.findFirst({
         where: { userId, status: 'active' },

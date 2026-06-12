@@ -85,7 +85,9 @@ model User {
   recommendations   Recommendation[]
   gamification      GamificationProfile?
   subscriptions     Subscription[]
+  payments          Payment[]
   purchases         Purchase[]
+  courses           Course[]
   events            Event[]
   tutorActions      TutorAction[]
   certificates      Certificate[]
@@ -119,15 +121,19 @@ model Course {
   premium           Boolean  @default(false)
   certificateEnabled Boolean @default(false)
   subjectId         String?
+  professorId       String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
   subject     Subject?    @relation(fields: [subjectId], references: [id])
+  professor   User?       @relation(fields: [professorId], references: [id], onDelete: SetNull)
   modules     Module[]
   enrollments Enrollment[]
   certificates Certificate[]
+  purchases   Purchase[]
 
   @@index([subjectId])
+  @@index([professorId])
   @@index([category])
 }
 
@@ -144,6 +150,7 @@ model Module {
   lessons Lesson[]
 
   @@index([courseId])
+  @@unique([courseId, order])
 }
 
 model Lesson {
@@ -163,8 +170,25 @@ model Lesson {
   module          Module            @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   lessonProgresses LessonProgress[]
   questions       Question[]
+  lessonMaterials LessonMaterial[]
 
   @@index([moduleId])
+  @@unique([moduleId, order])
+}
+
+model LessonMaterial {
+  id        String   @id @default(cuid())
+  lessonId  String
+  name      String
+  url       String
+  type      String?
+  sizeBytes Int?
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([lessonId])
 }
 
 model Topic {
@@ -574,6 +598,7 @@ model Payment {
   createdAt    DateTime @default(now())
 
   subscription Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([subscriptionId])
@@ -614,13 +639,16 @@ model Purchase {
   userId    String
   itemType  String
   itemId    String
+  courseId  String?
   amount    Decimal
   couponId  String?
   createdAt DateTime @default(now())
 
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   coupon Coupon? @relation(fields: [couponId], references: [id])
+  course Course? @relation(fields: [courseId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([couponId])
+  @@index([courseId])
 }

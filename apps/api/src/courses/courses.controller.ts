@@ -24,8 +24,8 @@ export class CoursesController {
 
   @Post()
   @Roles(UserRole.PROFESSOR, UserRole.ADMIN)
-  create(@Body() dto: CreateCourseDto) {
-    return this.coursesService.create(dto);
+  create(@Body() dto: CreateCourseDto, @CurrentUser('id') userId: string, @CurrentUser('papel') role: UserRole) {
+    return this.coursesService.create(dto, role === UserRole.PROFESSOR ? userId : undefined);
   }
 
   @Put(':id')
