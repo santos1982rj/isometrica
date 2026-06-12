@@ -384,3 +384,63 @@ isometrica.eng.br (Cloudflare)
 3. **Render deploy**: confirmar que build automático da API funciona
 4. **SSL/HTTPS**: garantir que Cloudflare → Vercel → Render esteja totalmente em HTTPS
 5. **Variáveis de ambiente**: replicar `.env.example` nos dashboards de Vercel e Render
+6. **Open Design**: MCP server configurado no opencode.json, mas aguardando instalação do daemon (desktop app ou portable)
+
+---
+
+## Sessão 6 — Refatoração Massiva + Laboratório + Open Design (12/06/2026)
+
+### Varredura do Projeto
+Identificadas 20+ categorias de falhas e gargalos:
+- **Banco**: StudentModel e SimuladoSession sem `@relation` → User; nenhum cascade delete; 5 índices faltando
+- **Bugs**: Mission upsert (usava nome como id); Certificate filter (subjectId:undefined retornava TUDO); videoUrl vs contentUrl; middleware dead code
+- **Dependências**: Ghost dep `@isometrica/contracts` na API; shadcn em runtime; class-variance-authority não usado; TS versões inconsistentes; packages sem build script
+- **Segurança**: SanitizePipe não global; rate limiting sem diferenciação; analytics trackEvent sem @Roles ou DTO
+- **Type Safety**: 30 `any` na produção (14 backend + 16 frontend)
+- **Performance**: ProfileService com 5 queries sequenciais; N+1 em ContentService.findLesson
+
+### Fase 1 — Correções Críticas
+- **Task 1.1**: Prisma schema — adicionados `@relation` em StudentModel e SimuladoSession; `onDelete: Cascade` em 30+ relações filhas; Payment.subscription → SetNull; Certificate.courseId nullable + SetNull; SimuladoAnswer index. Migrações geradas (x2)
+- **Task 1.2**: Mission upsert corrigido (compound unique `gamificationProfileId_name`); Certificate filter com operador ternário; `videoUrl` → `contentUrl` padronizado em backend + frontend; Middleware dead code removido; 9 novos testes
+- **Task 1.3**: Dependências — removidas ghost deps; adicionado dotenv; shadcn movido para devDeps; TS versões padronizadas (~5.8.0); packages com script `build`
+- **Task 1.4**: activity-timeline key fix (`act.title` → `${act.title}-${i}`); API_URL fallback `localhost:3001` → `/api`
+
+### Fase 2 — Segurança
+- SanitizePipe global no main.ts
+- `@Roles(ADMIN)` + DTO com class-validator no analytics.trackEvent
+- Rate limiting: auth endpoints em 10 req/min
+
+### Fase 3 — Type Safety
+- 30 `any` eliminados (zero na produção)
+- Backend: Prisma types (`QuestionWhereInput`, `ExamWhereInput`)
+- Frontend: interfaces em gamificação, concurso, api.ts
+
+### Fase 4 — DRY + Config Centralizada
+- Hook `useTutorChat` extraído (tutor page + modal: 250→50 linhas)
+- `CONFIG` centralizado em `common/config.ts`: GROQ, JWT, BKT, XP, port, email
+
+### Fase 5 — Performance + Cleanup
+- ProfileService: 5 queries em `Promise.all`
+- ContentService N+1 eliminado
+- COLORS/BREAKPOINTS removidos do package ui
+
+### Fase 6 — Landing Page
+- page.tsx: 586 → 18 linhas (10 componentes em `components/landing/`)
+
+### Bugfix — Tutor IA Streaming
+- **Causa raiz**: `break` só saía do `for` no streaming loop + `useEffect` sobrescrevia mensagens com TanStack Query cache stale + placeholder perdia match por re-renders
+- **Solução final**: Reescrevido `use-tutor-chat.ts` com fetch puro (sem TanStack Query), `useCallback` com deps explícitas, `streamingDone` flag, e `findLastIndex` por role+content vazio
+
+### Laboratório (`laboratorio/`)
+- `svg/viga-biapoiada-v1.svg` — primeira versão (DMF para cima)
+- `svg/viga-biapoiada.svg` — v2 corrigida (DMF lado tracionado)
+- `svg/tipos-apoio.svg` — 3 tipos de apoio com reações
+- `aula-tipos-apoio.html` — página de aula completa com exercícios
+- `design.pen` — designs no Pencil: cards + tabela + desenhos estruturais + dashboard glass
+- Scripts e output (vazios, preparados)
+
+### Open Design (nexu-io/open-design)
+- MCP server `open-design-mcp` instalado via pnpm
+- Configurado no `opencode.json` como `mcpServers.open-design`
+- Aguardando daemon (desktop app ou portable) em `localhost:7456`
+- 259+ skills, 142+ design systems disponíveis via MCP

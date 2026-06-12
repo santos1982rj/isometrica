@@ -14,6 +14,7 @@
   },
   "devDependencies": {
     "husky": "^9.1.7",
+    "open-design-mcp": "^0.16.1",
     "prettier": "^3.5.0",
     "turbo": "^2.9.16",
     "typescript": "~5.8.0"
