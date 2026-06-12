@@ -136,9 +136,13 @@ export function useTutorChat({ initialValue = '' }: UseTutorChatOptions = {}): U
         }
       }
 
-      setMensagens((prev) => prev.map((m) =>
-        m.id === msgId ? { ...m, content: fullContent } : m
-      ));
+      setMensagens((prev) => {
+        const idx = prev.findLastIndex((m) => m.role === 'assistant' && !m.content);
+        if (idx === -1) return prev;
+        const updated = [...prev];
+        updated[idx] = { ...updated[idx], content: fullContent };
+        return updated;
+      });
       setStreamContent('');
     } catch {
       setMensagens((prev) => [
