@@ -10,9 +10,6 @@ export class SubmitAttemptDto {
   @IsString()
   selectedId!: string;
 
-  @IsBoolean()
-  correct!: boolean;
-
   @IsNumber()
   @IsOptional()
   timeSpent?: number;

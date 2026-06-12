@@ -65,7 +65,6 @@ export class LearningService {
     userId: string;
     questionId: string;
     selectedId: string;
-    correct: boolean;
     timeSpent?: number;
     hintUsed?: boolean;
   }) {
@@ -76,8 +75,8 @@ export class LearningService {
     return this.attempt.getReviewQuestions(userId);
   }
 
-  answerReview(userId: string, questionId: string, correct: boolean) {
-    return this.attempt.answerReview(userId, questionId, correct);
+  answerReview(userId: string, questionId: string, selectedId: string) {
+    return this.attempt.answerReview(userId, questionId, selectedId);
   }
 
   getUserErrors(userId: string) {

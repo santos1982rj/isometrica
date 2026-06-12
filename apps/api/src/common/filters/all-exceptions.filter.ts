@@ -29,8 +29,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
           message = body.message;
         }
       }
-    } else if (exception instanceof Error) {
-      message = exception.message;
     }
 
     response.status(status).json({

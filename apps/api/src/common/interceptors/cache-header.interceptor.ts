@@ -9,7 +9,11 @@ export class CacheHeaderInterceptor implements NestInterceptor {
     const request = context.switchToHttp().getRequest();
 
     if (request.method === 'GET') {
-      response.setHeader('Cache-Control', 'public, max-age=60, s-maxage=300');
+      if (request.user) {
+        response.setHeader('Cache-Control', 'private, no-store');
+      } else {
+        response.setHeader('Cache-Control', 'public, max-age=60, s-maxage=300');
+      }
     }
 
     return next.handle();

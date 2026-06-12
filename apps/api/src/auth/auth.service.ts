@@ -28,7 +28,7 @@ export class AuthService {
         email: dto.email,
         passwordHash: senhaHash,
         name: dto.nome,
-        role: dto.papel ?? 'STUDENT',
+        role: 'STUDENT',
         university: dto.universidade,
         period: dto.periodo,
       },

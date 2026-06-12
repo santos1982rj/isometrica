@@ -1,8 +1,9 @@
-import { IsString, MinLength } from 'class-validator';
+import { IsOptional, IsString, MinLength } from 'class-validator';
 
 export class SaveNoteDto {
   @IsString()
-  userId!: string;
+  @IsOptional()
+  userId?: string;
 
   @IsString()
   lessonId!: string;

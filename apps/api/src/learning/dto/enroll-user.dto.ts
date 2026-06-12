@@ -1,8 +1,9 @@
-import { IsString } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 
 export class EnrollUserDto {
   @IsString()
-  userId!: string;
+  @IsOptional()
+  userId?: string;
 
   @IsString()
   courseId!: string;

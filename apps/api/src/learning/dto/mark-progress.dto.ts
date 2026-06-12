@@ -1,8 +1,9 @@
-import { IsString, IsBoolean } from 'class-validator';
+import { IsString, IsBoolean, IsOptional } from 'class-validator';
 
 export class MarkProgressDto {
   @IsString()
-  userId!: string;
+  @IsOptional()
+  userId?: string;
 
   @IsString()
   lessonId!: string;

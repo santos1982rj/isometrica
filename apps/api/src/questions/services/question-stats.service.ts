@@ -39,7 +39,6 @@ export class QuestionStatsService {
     const alternativeDistribution = alternatives.map((alt) => ({
       id: alt.id,
       text: alt.text,
-      isCorrect: alt.isCorrect,
       timesSelected: altCount[alt.id]?.count ?? 0,
       percentage: altCount[alt.id]?.percentage ?? 0,
     }));

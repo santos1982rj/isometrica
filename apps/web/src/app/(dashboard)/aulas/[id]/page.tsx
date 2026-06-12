@@ -79,10 +79,10 @@ export default function AulaPage(props: { params: Promise<{ id: string }> }) {
     } catch {} finally { setCompletando(false) }
   }
 
-  function handleQuizAttempt(attempts: { questionId: string; selectedId: string; correct: boolean }[]) {
+  function handleQuizAttempt(attempts: { questionId: string; selectedId: string }[]) {
     if (usuario) {
       attempts.forEach((a) => {
-        submitAttemptMutation.mutate({ userId: usuario.id, questionId: a.questionId, selectedId: a.selectedId, correct: a.correct })
+        submitAttemptMutation.mutate({ questionId: a.questionId, selectedId: a.selectedId })
       })
     }
   }

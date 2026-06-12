@@ -7,6 +7,15 @@ import type { QuestionWhereInput, QuestionOrderByWithRelationInput, QuestionUpda
 export class QuestionCrudService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private hideAnswerKey<T extends { alternatives?: Array<Record<string, unknown>>; explanation?: unknown }>(question: T): Omit<T, 'explanation'> {
+    const { explanation: _explanation, ...safeQuestion } = question;
+    if (!question.alternatives) return safeQuestion;
+    return {
+      ...safeQuestion,
+      alternatives: question.alternatives.map(({ isCorrect: _isCorrect, ...alternative }) => alternative),
+    };
+  }
+
   async list(filters: {
     search?: string; topicId?: string; examId?: string; difficulty?: string;
     type?: string; status?: string; tag?: string; board?: string; year?: string;
@@ -48,7 +57,7 @@ export class QuestionCrudService {
       this.prisma.question.count({ where }),
     ]);
 
-    return { data, total, page, totalPages: Math.ceil(total / limit) };
+    return { data: data.map((question) => this.hideAnswerKey(question)), total, page, totalPages: Math.ceil(total / limit) };
   }
 
   async findById(id: string) {
@@ -57,7 +66,7 @@ export class QuestionCrudService {
       include: { topic: { include: { subject: true } }, exam: true, alternatives: true, tags: true, stats: true, comments: { include: { user: { select: { id: true, name: true, imageUrl: true } } }, orderBy: { createdAt: 'desc' } } },
     });
     if (!q) throw new NotFoundException('Questão não encontrada');
-    return q;
+    return this.hideAnswerKey(q);
   }
 
   async create(data: {

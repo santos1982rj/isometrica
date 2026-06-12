@@ -6,6 +6,15 @@ import type { QuestionDifficulty, BloomLevel } from '../generated/prisma/enums';
 export class ContentService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private hideAnswerKey<T extends { alternatives?: Array<Record<string, unknown>>; explanation?: unknown }>(question: T): Omit<T, 'explanation'> {
+    const { explanation: _explanation, ...safeQuestion } = question;
+    if (!question.alternatives) return safeQuestion;
+    return {
+      ...safeQuestion,
+      alternatives: question.alternatives.map(({ isCorrect: _isCorrect, ...alternative }) => alternative),
+    };
+  }
+
   async createModule(courseId: string, data: { name: string; order: number }) {
     const course = await this.prisma.course.findUnique({ where: { id: courseId } });
     if (!course) throw new NotFoundException('Curso não encontrado');
@@ -88,10 +97,11 @@ export class ContentService {
     const topicIds = lesson.module.course.subject?.topics.map((t) => t.id) ?? [];
     if (topicIds.length === 0) return [];
 
-    return this.prisma.question.findMany({
+    const questions = await this.prisma.question.findMany({
       where: { topicId: { in: topicIds } },
       include: { alternatives: true, topic: true },
     });
+    return questions.map((question) => this.hideAnswerKey(question));
   }
 
   async createQuestion(data: {

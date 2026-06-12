@@ -2,18 +2,16 @@
 
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
-import { useTutor } from '@/contexts/tutor-context'
-import { FileQuestion, CheckCircle, Sparkles } from 'lucide-react'
+import { FileQuestion, CheckCircle } from 'lucide-react'
 import type { Questao } from '@/lib/types'
 
 interface QuizSectionProps {
   questoes: Questao[]
   carregando: boolean
-  onAttempt: (attempts: { questionId: string; selectedId: string; correct: boolean }[]) => void
+  onAttempt: (attempts: { questionId: string; selectedId: string }[]) => void
 }
 
 export function QuizSection({ questoes, carregando, onAttempt }: QuizSectionProps) {
-  const { openTutor } = useTutor()
   const [respostas, setRespostas] = useState<Record<string, string>>({})
   const [quizEnviado, setQuizEnviado] = useState(false)
 
@@ -44,7 +42,7 @@ export function QuizSection({ questoes, carregando, onAttempt }: QuizSectionProp
           {questoes.length} questão{questoes.length > 1 ? 'ões' : ''}
           {quizEnviado && (
             <span className="ml-2 font-semibold text-isometrica-success">
-              — {questoes.filter((q, i) => respostas[q.id] === q.alternatives.find((a) => a.isCorrect)?.id).length}/{questoes.length} acertos
+              — respostas enviadas
             </span>
           )}
         </p>
@@ -54,14 +52,13 @@ export function QuizSection({ questoes, carregando, onAttempt }: QuizSectionProp
               setQuizEnviado(true)
               const attempts = questoes.map((q) => {
                 const esc = respostas[q.id]
-                const correta = q.alternatives.find((a) => a.isCorrect)
-                return { questionId: q.id, selectedId: esc ?? '', correct: esc === correta?.id }
+                return { questionId: q.id, selectedId: esc ?? '' }
               })
               onAttempt(attempts)
             }}
             className="rounded-lg bg-isometrica-accent px-4 py-2 text-xs font-semibold text-white hover:bg-isometrica-accent/90"
           >
-            Corrigir
+            Enviar respostas
           </button>
         )}
         {quizEnviado && (
@@ -76,18 +73,12 @@ export function QuizSection({ questoes, carregando, onAttempt }: QuizSectionProp
 
       {questoes.map((q, idx) => {
         const esc = respostas[q.id]
-        const correta = q.alternatives.find((a) => a.isCorrect)
-        const acertou = esc === correta?.id
         return (
           <div
             key={q.id}
             className={cn(
               'rounded-xl border p-4 sm:p-5 transition-colors',
-              quizEnviado
-                ? acertou
-                  ? 'border-isometrica-success/40 bg-isometrica-success/[0.02]'
-                  : 'border-isometrica-danger/40 bg-isometrica-danger/[0.02]'
-                : 'border-border bg-card',
+              quizEnviado ? 'border-isometrica-success/40 bg-isometrica-success/[0.02]' : 'border-border bg-card',
             )}
           >
             <div className="flex items-start gap-3">
@@ -112,11 +103,9 @@ export function QuizSection({ questoes, carregando, onAttempt }: QuizSectionProp
                     className={cn(
                       'flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 sm:px-4 sm:py-3 text-left text-sm transition-all',
                       feedback
-                        ? alt.isCorrect
+                        ? sel
                           ? 'border-isometrica-success/50 bg-isometrica-success/[0.03]'
-                          : sel && !alt.isCorrect
-                            ? 'border-isometrica-danger/50 bg-isometrica-danger/[0.03]'
-                            : 'border-border'
+                          : 'border-border'
                         : sel
                           ? 'border-isometrica-accent/50 bg-isometrica-accent/[0.03]'
                           : 'border-border hover:bg-muted/50',
@@ -133,19 +122,11 @@ export function QuizSection({ questoes, carregando, onAttempt }: QuizSectionProp
                       {String.fromCharCode(65 + q.alternatives.indexOf(alt))}
                     </span>
                     <span className="flex-1">{alt.text}</span>
-                    {feedback && alt.isCorrect && <CheckCircle className="size-4 shrink-0 text-isometrica-success" />}
+                    {feedback && sel && <CheckCircle className="size-4 shrink-0 text-isometrica-success" />}
                   </button>
                 )
               })}
             </div>
-            {quizEnviado && !acertou && (
-              <button
-                onClick={() => openTutor(`Explique por que errei esta questão: "${q.text}". A resposta correta era "${correta?.text}".`)}
-                className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-border px-3.5 py-2 text-[11px] font-semibold text-muted-foreground transition-all hover:border-isometrica-accent hover:text-isometrica-accent"
-              >
-                <Sparkles className="size-3.5" /> Explique por que errei
-              </button>
-            )}
             {quizEnviado && q.explanation && (
               <p className="mt-3 rounded-lg bg-muted/50 px-4 py-2 text-xs text-muted-foreground leading-relaxed">
                 {q.explanation}

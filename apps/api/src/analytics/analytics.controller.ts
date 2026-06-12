@@ -3,6 +3,7 @@ import { AnalyticsService } from './analytics.service';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole, EventType } from '../generated/prisma/enums';
 import { TrackEventDto } from './dto/track-event.dto';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Controller('analytics')
 export class AnalyticsController {
@@ -15,8 +16,9 @@ export class AnalyticsController {
   }
 
   @Get('events/:userId')
-  getUserEvents(@Param('userId') userId: string) {
-    return this.analyticsService.getUserEvents(userId);
+  getUserEvents(@Param('userId') userId: string, @CurrentUser('id') currentUserId: string, @CurrentUser('papel') role: UserRole) {
+    const targetUserId = role === UserRole.ADMIN || role === UserRole.PROFESSOR ? userId : currentUserId;
+    return this.analyticsService.getUserEvents(targetUserId);
   }
 
   @Get('summary')

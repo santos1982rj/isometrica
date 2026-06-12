@@ -12,7 +12,6 @@ interface StatsPanelProps {
     alternativeDistribution?: {
       id: string
       text: string
-      isCorrect: boolean
       timesSelected: number
       percentage: number
     }[]
@@ -98,12 +97,11 @@ export function StatsPanel({ stats, dominio }: StatsPanelProps) {
                 </span>
                 <div className="flex-1 overflow-hidden rounded-full bg-muted h-4 relative">
                   <div
-                    className={cn('h-full rounded-full transition-all', alt.isCorrect ? 'bg-isometrica-success/40' : 'bg-isometrica-accent/20')}
+                    className="h-full rounded-full bg-isometrica-accent/20 transition-all"
                     style={{ width: `${alt.percentage}%` }}
                   />
                 </div>
                 <span className="w-10 text-right text-muted-foreground">{alt.percentage}%</span>
-                {alt.isCorrect && <Brain className="size-3 text-isometrica-success" />}
               </div>
             ))}
           </div>

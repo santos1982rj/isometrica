@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronRight, CheckCircle, Lightbulb } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import type { Questao } from '@/lib/types'
@@ -90,34 +90,21 @@ export function QuestionCard({ questao: q, selecionada, statsQuestao, dominio, o
                 key={alt.id}
                 className={cn(
                   'flex items-center gap-3 rounded-lg border px-3 py-2.5 text-sm',
-                  alt.isCorrect ? 'border-isometrica-success/40 bg-isometrica-success/[0.02]' : 'border-border',
+                  'border-border',
                 )}
               >
                 <span
                   className={cn(
                     'flex size-6 shrink-0 items-center justify-center rounded-full text-[10px] font-medium border',
-                    alt.isCorrect
-                      ? 'border-isometrica-success bg-isometrica-success text-white'
-                      : 'border-border text-muted-foreground',
+                    'border-border text-muted-foreground',
                   )}
                 >
                   {String.fromCharCode(65 + i)}
                 </span>
                 <span className="flex-1">{alt.text}</span>
-                {alt.isCorrect && <CheckCircle className="size-4 shrink-0 text-isometrica-success" />}
               </div>
             ))}
           </div>
-
-          {q.explanation && (
-            <div className="rounded-lg bg-muted/30 p-3">
-              <div className="mb-1 flex items-center gap-1">
-                <Lightbulb className="size-3 text-muted-foreground" />
-                <p className="text-xs font-semibold">Explicação</p>
-              </div>
-              <p className="text-xs leading-relaxed text-muted-foreground">{q.explanation}</p>
-            </div>
-          )}
 
           {(statsQuestao || dominio) && <StatsPanel stats={statsQuestao!} dominio={dominio} />}
         </div>

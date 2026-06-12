@@ -57,10 +57,9 @@ export default function ErrosPage() {
     if (!esc) return
     setMostrarFeedback((prev) => ({ ...prev, [err.question.id]: true }))
     if (usuario) {
-      const correta = err.question.alternatives.find((a) => a.isCorrect)
       enviarTentativa({
-        userId: usuario.id, questionId: err.question.id, selectedId: esc,
-        correct: esc === correta?.id,
+        questionId: err.question.id,
+        selectedId: esc,
       })
     }
   }
@@ -108,10 +107,8 @@ export default function ErrosPage() {
           <motion.div variants={item} className="space-y-5 lg:col-span-3">
             {erros.map((err) => {
               const q = err.question
-              const correta = q.alternatives.find((a) => a.isCorrect)
               const esc = refazendo[q.id]
               const feedback = mostrarFeedback[q.id]
-              const acertou = feedback && esc === correta?.id
 
               return (
                 <div key={err.id} className="bento-card rounded-xl border border-border bg-card p-5">
@@ -148,8 +145,7 @@ export default function ErrosPage() {
                       {q.alternatives.map((alt) => {
                         let classe = 'border-border hover:bg-muted/50'
                         if (feedback) {
-                          if (alt.isCorrect) classe = 'border-isometrica-success/50 bg-isometrica-success/[0.03]'
-                          else if (esc === alt.id && !alt.isCorrect) classe = 'border-isometrica-danger/50 bg-isometrica-danger/[0.03]'
+                          if (feedback && esc === alt.id) classe = 'border-isometrica-success/50 bg-isometrica-success/[0.03]'
                         } else if (esc === alt.id) {
                           classe = 'border-isometrica-accent/50 bg-isometrica-accent/[0.03]'
                         }
@@ -167,7 +163,7 @@ export default function ErrosPage() {
                               {String.fromCharCode(65 + q.alternatives.indexOf(alt))}
                             </span>
                             <span className="flex-1">{alt.text}</span>
-                            {feedback && alt.isCorrect && <CheckCircle className="size-4 shrink-0 text-isometrica-success" />}
+                            {feedback && esc === alt.id && <CheckCircle className="size-4 shrink-0 text-isometrica-success" />}
                           </button>
                         )
                       })}
@@ -189,8 +185,8 @@ export default function ErrosPage() {
                           </button>
                         )}
                         {feedback && (
-                          <span className={cn('text-xs font-semibold', acertou ? 'text-isometrica-success' : 'text-isometrica-danger')}>
-                            {acertou ? <span className="inline-flex items-center gap-1"><CheckCircle className="size-3" /> Correto!</span> : <span className="inline-flex items-center gap-1"><XCircle className="size-3" /> Ainda errado. Reveja o conteúdo.</span>}
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-isometrica-success">
+                            <CheckCircle className="size-3" /> Resposta enviada para nova avaliação.
                           </span>
                         )}
                         {feedback && q.explanation && (

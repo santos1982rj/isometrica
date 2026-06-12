@@ -1,5 +1,4 @@
-import { IsEmail, IsString, MinLength, IsOptional, IsEnum, Min } from 'class-validator';
-import { UserRole } from '../../generated/prisma/enums';
+import { IsEmail, IsString, MinLength, IsOptional, Min } from 'class-validator';
 
 export class SignupDto {
   @IsEmail()
@@ -21,7 +20,4 @@ export class SignupDto {
   @Min(1)
   periodo?: number;
 
-  @IsEnum(UserRole)
-  @IsOptional()
-  papel?: UserRole;
 }

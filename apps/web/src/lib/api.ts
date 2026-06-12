@@ -81,7 +81,7 @@ export interface ExamDetailResponse {
     difficulty: string
     bloomLevel: string
     topic: { id: string; name: string; subject: { id: string; name: string } } | null
-    alternatives: { id: string; text: string; isCorrect: boolean }[]
+    alternatives: { id: string; text: string }[]
   }[]
 }
 
@@ -192,7 +192,7 @@ export const api = {
     verificarMatricula: (userId: string, courseId: string) =>
       request<Matricula>(`/learning/enrolled/${userId}/${courseId}`),
     matriculas: (userId: string) => request<Enrollment[]>(`/learning/enrollments/${userId}`),
-    enviarTentativa: (data: { userId: string; questionId: string; selectedId: string; correct: boolean }) =>
+    enviarTentativa: (data: { userId?: string; questionId: string; selectedId: string }) =>
       request<{ id: string }>('/learning/attempts', { method: 'POST', body: JSON.stringify(data) }),
     erros: (userId: string) => request<Questao[]>(`/learning/errors/${userId}`),
     limparErros: (userId: string) => request<{ message: string }>(`/learning/errors/${userId}/clear`, { method: 'POST' }),

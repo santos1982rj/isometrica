@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EventBusService } from '../../event-bus/event-bus.service';
 import { EventType } from '../../event-bus/interfaces/event.interface';
@@ -10,17 +10,34 @@ export class AttemptService {
     private readonly eventBus: EventBusService,
   ) {}
 
+  private hideAnswerKey<T extends { alternatives?: Array<Record<string, unknown>>; explanation?: unknown }>(question: T): Omit<T, 'explanation'> {
+    const { explanation: _explanation, ...safeQuestion } = question;
+    if (!question.alternatives) return safeQuestion;
+    return {
+      ...safeQuestion,
+      alternatives: question.alternatives.map(({ isCorrect: _isCorrect, ...alternative }) => alternative),
+    };
+  }
+
   async submitAttempt(data: {
     userId: string;
     questionId: string;
     selectedId: string;
-    correct: boolean;
     timeSpent?: number;
     hintUsed?: boolean;
   }) {
-    const attempt = await this.prisma.questionAttempt.create({ data, include: { question: true } });
+    const selected = await this.prisma.alternative.findFirst({
+      where: { id: data.selectedId, questionId: data.questionId },
+    });
+    if (!selected) throw new BadRequestException('Alternativa inválida');
 
-    const eventType = data.correct ? EventType.QUESTION_CORRECT : EventType.QUESTION_INCORRECT;
+    const correct = selected.isCorrect;
+    const attempt = await this.prisma.questionAttempt.create({
+      data: { ...data, correct },
+      include: { question: true },
+    });
+
+    const eventType = correct ? EventType.QUESTION_CORRECT : EventType.QUESTION_INCORRECT;
 
     await this.eventBus.publish({
       type: eventType,
@@ -29,7 +46,7 @@ export class AttemptService {
       metadata: {
         questionId: data.questionId,
         topicId: attempt.question.topicId,
-        correct: data.correct,
+        correct,
         timeSpent: data.timeSpent ?? 0,
         hintUsed: data.hintUsed ?? false,
       },
@@ -46,10 +63,14 @@ export class AttemptService {
       orderBy: { nextReview: 'asc' },
       take: 20,
     });
-    return schedules.map((s) => ({ id: s.id, question: s.question, nextReview: s.nextReview, ease: s.ease }));
+    return schedules.map((s) => ({ id: s.id, question: this.hideAnswerKey(s.question), nextReview: s.nextReview, ease: s.ease }));
   }
 
-  async answerReview(userId: string, questionId: string, correct: boolean) {
+  async answerReview(userId: string, questionId: string, selectedId: string) {
+    const selected = await this.prisma.alternative.findFirst({ where: { id: selectedId, questionId } });
+    if (!selected) throw new BadRequestException('Alternativa inválida');
+    const correct = selected.isCorrect;
+
     const schedule = await this.prisma.reviewSchedule.findUnique({
       where: { userId_questionId: { userId, questionId } },
     });
@@ -78,7 +99,7 @@ export class AttemptService {
     const nextReview = new Date();
     nextReview.setDate(nextReview.getDate() + interval);
 
-    await this.prisma.questionAttempt.create({ data: { userId, questionId, selectedId: '', correct } });
+    await this.prisma.questionAttempt.create({ data: { userId, questionId, selectedId, correct } });
 
     return this.prisma.reviewSchedule.update({
       where: { userId_questionId: { userId, questionId } },
@@ -100,7 +121,7 @@ export class AttemptService {
       if (seen.has(a.questionId)) return false
       seen.add(a.questionId)
       return true
-    });
+    }).map((attempt) => ({ ...attempt, question: this.hideAnswerKey(attempt.question) }));
   }
 
   async clearUserErrors(userId: string) {

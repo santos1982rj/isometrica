@@ -8,6 +8,15 @@ import type { ExamWhereInput } from '../../generated/prisma/models';
 export class ExamService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private hideAnswerKey<T extends { alternatives?: Array<Record<string, unknown>>; explanation?: unknown }>(question: T): Omit<T, 'explanation'> {
+    const { explanation: _explanation, ...safeQuestion } = question;
+    if (!question.alternatives) return safeQuestion;
+    return {
+      ...safeQuestion,
+      alternatives: question.alternatives.map(({ isCorrect: _isCorrect, ...alternative }) => alternative),
+    };
+  }
+
   async getTags() {
     const tags = await this.prisma.questionTag.groupBy({ by: ['tag'], _count: { tag: true }, orderBy: { _count: { tag: 'desc' } }, take: 100 });
     return tags.map((t) => ({ tag: t.tag, count: t._count.tag }));
@@ -73,7 +82,7 @@ export class ExamService {
       },
     });
     if (!exam) throw new NotFoundException('Exame não encontrado');
-    return exam;
+    return { ...exam, questions: exam.questions.map((question) => this.hideAnswerKey(question)) };
   }
 
   async updateExam(id: string, dto: UpdateExamDto) {
@@ -122,7 +131,7 @@ export class ExamService {
 
     return {
       exam: { id: exam.id, title: exam.name, timeLimit: exam.timeLimit },
-      questions,
+      questions: questions.map((question) => this.hideAnswerKey(question)),
       totalQuestions: questions.length,
       timeLimit: exam.timeLimit,
     };
@@ -163,9 +172,7 @@ export class ExamService {
         text: q.text,
         difficulty: q.difficulty,
         topic: q.topicId,
-        alternatives: q.alternatives.map(alt => ({
-          id: alt.id, text: alt.text,
-        })),
+        alternatives: q.alternatives.map(alt => ({ id: alt.id, text: alt.text })),
       })),
       startedAt: session.startedAt,
     };
