@@ -53,6 +53,75 @@ import type {
   SimuladoResponse, PurchaseResponse, ImportQuestionsInput,
 } from './types';
 
+export interface ExamListItem {
+  id: string
+  title: string
+  description: string | null
+  board: string
+  year: string | null
+  questionCount: number
+  createdAt: string
+  difficulty: string | null
+  area: string | null
+  timeLimit: number | null
+}
+
+export interface ExamDetailResponse {
+  id: string
+  name: string
+  board: string | null
+  year: number | null
+  difficulty: string | null
+  area: string | null
+  timeLimit: number | null
+  questionCount: number
+  questions?: {
+    id: string
+    text: string
+    difficulty: string
+    bloomLevel: string
+    topic: { id: string; name: string; subject: { id: string; name: string } } | null
+    alternatives: { id: string; text: string; isCorrect: boolean }[]
+  }[]
+}
+
+export interface SimuladoStartResponse {
+  sessionId: string
+  exam: { id: string; name: string; timeLimit: number | null }
+  totalQuestions: number
+  questions: {
+    questionId: string
+    text: string
+    difficulty: string
+    topic: string
+    alternatives: { id: string; text: string }[]
+  }[]
+  startedAt: string
+}
+
+export interface SimuladoResultResponse {
+  sessionId: string
+  examId: string
+  score: number | null
+  totalCorrect: number | null
+  totalQuestions: number | null
+  status: string
+  startedAt: Date
+  finishedAt: Date | null
+  questions: {
+    questionId: string
+    text: string
+    explanation: string | null
+    difficulty: string
+    topic: string | null
+    subject: string | null
+    alternatives: { id: string; text: string; isCorrect: boolean }[]
+    selectedId: string | null
+    correct: boolean | null
+    timeSpent: number | null
+  }[]
+}
+
 export const api = {
   auth: {
     cadastro: (data: { email: string; senha: string; nome?: string }) =>
@@ -198,20 +267,20 @@ export const api = {
     remover: (id: string) => request<{ message: string }>(`/questions/${id}`, { method: 'DELETE' }),
     arvore: () => request<QuestionTreeItem[]>('/questions/tree'),
     tags: () => request<QuestionTag[]>('/questions/tags'),
-    exames: (params?: Record<string, string>) => request<any>(`/questions/exams?${new URLSearchParams(params ?? {}).toString()}`),
+    exames: (params?: Record<string, string>) => request<{ data: ExamListItem[]; total: number; page: number; totalPages: number }>(`/questions/exams?${new URLSearchParams(params ?? {}).toString()}`),
     criarExame: (data: { name: string; board?: string; year?: number; timeLimit?: number; difficulty?: string; area?: string; questionIds?: string[] }) =>
-      request<any>('/questions/exams', { method: 'POST', body: JSON.stringify(data) }),
+      request<ExamDetailResponse>('/questions/exams', { method: 'POST', body: JSON.stringify(data) }),
     boards: () => request<string[]>('/questions/exams/boards'),
-    obterExame: (id: string) => request<any>(`/questions/exams/${id}`),
-    atualizarExame: (id: string, data: any) => request<any>(`/questions/exams/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    obterExame: (id: string) => request<ExamDetailResponse>(`/questions/exams/${id}`),
+    atualizarExame: (id: string, data: Record<string, unknown>) => request<ExamDetailResponse>(`/questions/exams/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     removerExame: (id: string) => request<{ message: string }>(`/questions/exams/${id}`, { method: 'DELETE' }),
     stats: (id: string) => request<QuestionStats>(`/questions/stats/${id}`),
     dominio: (topicId: string) => request<TopicMastery>(`/questions/mastery/${topicId}`),
     simulado: (examId: string, limit = 10) => request<SimuladoResponse>(`/questions/simulado/${examId}?limit=${limit}`),
-    iniciarSimulado: (examId: string) => request<any>(`/questions/simulado/${examId}/start`, { method: 'POST' }),
+    iniciarSimulado: (examId: string) => request<SimuladoStartResponse>(`/questions/simulado/${examId}/start`, { method: 'POST' }),
     submeterSimulado: (sessionId: string, answers: { questionId: string; selectedId: string | null; timeSpent: number }[]) =>
-      request<any>(`/questions/simulado/${sessionId}/submit`, { method: 'PUT', body: JSON.stringify({ answers }) }),
-    resultadoSimulado: (sessionId: string) => request<any>(`/questions/simulado/${sessionId}/result`),
+      request<SimuladoResultResponse>(`/questions/simulado/${sessionId}/submit`, { method: 'PUT', body: JSON.stringify({ answers }) }),
+    resultadoSimulado: (sessionId: string) => request<SimuladoResultResponse>(`/questions/simulado/${sessionId}/result`),
     gerarComIA: (topicId: string, count = 3, difficulty?: string) =>
       request<Questao[]>(`/questions/generate/${topicId}`, { method: 'POST', body: JSON.stringify({ count, difficulty }) }),
   },

@@ -380,7 +380,7 @@ export function useCreateExam() {
 export function useUpdateExam() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => api.questions.atualizarExame(id, data),
+    mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) => api.questions.atualizarExame(id, data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['questions', 'exams'] }) },
   });
 }

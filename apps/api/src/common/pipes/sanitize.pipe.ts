@@ -32,14 +32,15 @@ const SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
 
 @Injectable()
 export class SanitizePipe implements PipeTransform {
-  transform(value: any) {
+  transform(value: unknown) {
     if (typeof value === 'string') {
       return sanitizeHtml(value, SANITIZE_OPTIONS);
     }
     if (typeof value === 'object' && value !== null) {
-      for (const key of Object.keys(value)) {
-        if (typeof value[key] === 'string') {
-          value[key] = sanitizeHtml(value[key], SANITIZE_OPTIONS);
+      const obj = value as Record<string, unknown>;
+      for (const key of Object.keys(obj)) {
+        if (typeof obj[key] === 'string') {
+          obj[key] = sanitizeHtml(obj[key] as string, SANITIZE_OPTIONS);
         }
       }
     }

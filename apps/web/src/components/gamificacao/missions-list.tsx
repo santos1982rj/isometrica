@@ -8,8 +8,17 @@ const itemAnim = {
   show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] as const } },
 }
 
+interface Mission {
+  name: string
+  desc: string
+  icon: React.ComponentType<{ className?: string }>
+  progress: number
+  target: number
+  xpReward: number
+}
+
 interface MissionsListProps {
-  missions: any[]
+  missions: Mission[]
 }
 
 export function MissionsList({ missions }: MissionsListProps) {

@@ -4,7 +4,8 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useQueryClient } from '@tanstack/react-query'
 import { useExams, useExamBoards, useCreateExam, useUpdateExam, useDeleteExam, useSubjectTree } from '@/lib/queries'
-import { Plus, Pencil, Trash2, Search, BookOpen, Clock, CheckCircle, X, ExternalLink } from 'lucide-react'
+import type { ExamListItem } from '@/lib/api'
+import { Plus, Pencil, Trash2, Search, BookOpen, Clock, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -59,7 +60,7 @@ export default function ProfessorConcursosPage() {
     setModalOpen(true)
   }
 
-  function openEdit(exam: any) {
+  function openEdit(exam: ExamListItem) {
     setEditId(exam.id)
     setForm({
       name: exam.title ?? '',
@@ -137,7 +138,7 @@ export default function ProfessorConcursosPage() {
       </motion.div>
 
       <motion.div variants={itemAnim} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {exams.map((exam: any) => (
+        {exams.map((exam: ExamListItem) => (
           <div key={exam.id} className="rounded-xl border border-border bg-card p-5 transition-all hover:shadow-sm">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">

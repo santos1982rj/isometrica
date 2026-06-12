@@ -8,8 +8,16 @@ const itemAnim = {
   show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] as const } },
 }
 
+interface RankingUser {
+  pos: number
+  name: string
+  level: number
+  xp: number
+  isMe?: boolean
+}
+
 interface RankingListProps {
-  ranking: any[]
+  ranking: RankingUser[]
 }
 
 export function RankingList({ ranking }: RankingListProps) {

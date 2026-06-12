@@ -5,7 +5,8 @@ import { useParams, useRouter } from 'next/navigation'
 import { useResultadoSimulado } from '@/lib/queries'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { CheckCircle, XCircle, Clock, Award, BarChart3, ArrowLeft, Loader2 } from 'lucide-react'
+import { CheckCircle, XCircle, Clock, Award, ArrowLeft, Loader2 } from 'lucide-react'
+import type { SimuladoResultResponse } from '@/lib/api'
 
 export default function ResultadoPage() {
   const params = useParams()
@@ -34,7 +35,7 @@ export default function ResultadoPage() {
   const wrong = total - correct
 
   const questions = resultado.questions ?? []
-  const filteredQuestions = questions.filter((q: any) => {
+  const filteredQuestions = questions.filter((q: SimuladoResultResponse['questions'][number]) => {
     if (filter === 'correct') return q.correct === true
     if (filter === 'wrong') return q.correct === false || q.correct === null
     return true
@@ -115,7 +116,7 @@ export default function ResultadoPage() {
 
       {/* Questions review */}
       <div className="space-y-3">
-        {filteredQuestions.map((q: any, idx: number) => (
+        {filteredQuestions.map((q: SimuladoResultResponse['questions'][number], idx: number) => (
           <div
             key={q.questionId}
             className={`rounded-xl border p-5 transition-colors ${
@@ -145,7 +146,7 @@ export default function ResultadoPage() {
                   </Badge>
                 </div>
                 <div className="mt-3 space-y-1">
-                  {q.alternatives?.map((alt: any) => {
+                  {q.alternatives?.map((alt: SimuladoResultResponse['questions'][number]['alternatives'][number]) => {
                     const isSelected = alt.id === q.selectedId
                     const isCorrectAlt = alt.isCorrect
                     return (

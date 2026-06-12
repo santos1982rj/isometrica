@@ -91,7 +91,7 @@ export class ProfileService {
 
     return {
       user: { id: user.id, name: user.name, imageUrl: user.imageUrl, role: user.role, title: user.title, bio: user.bio, lattes: user.lattes, linkedin: user.linkedin, instagram: user.instagram, twitter: user.twitter, createdAt: user.createdAt },
-      certificates: certificates.map((c) => ({ id: c.id, title: c.title, proficiency: c.proficiency, totalHours: c.totalHours, courseName: c.course.name, createdAt: c.createdAt })),
+      certificates: certificates.map((c) => ({ id: c.id, title: c.title, proficiency: c.proficiency, totalHours: c.totalHours, courseName: c.course?.name ?? '', createdAt: c.createdAt })),
       gamification: gamification ? { xp: gamification.xp, level: gamification.level, streak: gamification.streak } : null,
       coursesCreated: coursesCreated.map((c) => ({ id: c.id, name: c.name, description: c.description, category: c.category })),
     };

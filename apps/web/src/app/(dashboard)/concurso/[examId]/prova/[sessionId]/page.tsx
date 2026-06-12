@@ -4,9 +4,12 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
 import { useResultadoSimulado } from '@/lib/queries'
-import { api } from '@/lib/api'
+import { api, type SimuladoStartResponse } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { ChevronLeft, ChevronRight, Clock, Flag, Loader2, AlertTriangle } from 'lucide-react'
+
+type QuestaoProva = SimuladoStartResponse['questions'][number]
+type ExamInfo = SimuladoStartResponse['exam']
 
 export default function ProvaPage() {
   const params = useParams()
@@ -15,13 +18,13 @@ export default function ProvaPage() {
   const examId = params.examId as string
   const sessionId = params.sessionId as string
 
-  const [questoes, setQuestoes] = useState<any[]>([])
+  const [questoes, setQuestoes] = useState<QuestaoProva[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [answers, setAnswers] = useState<Record<string, string | null>>({})
   const [timeSpent, setTimeSpent] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
-  const [examInfo, setExamInfo] = useState<any>(null)
+  const [examInfo, setExamInfo] = useState<ExamInfo | null>(null)
   const [timeLeft, setTimeLeft] = useState<number | null>(null)
   const [confirmEnd, setConfirmEnd] = useState(false)
   const startTimes = useRef<Record<string, number>>({})
@@ -208,7 +211,7 @@ export default function ProvaPage() {
           <p className="text-sm leading-relaxed lg:text-base">{question.text}</p>
 
           <div className="mt-6 space-y-2.5">
-            {question.alternatives?.map((alt: any) => {
+            {question.alternatives?.map((alt: { id: string; text: string }) => {
               const selected = answers[question.questionId] === alt.id
               return (
                 <button

@@ -96,7 +96,7 @@ export class ProgressService {
     }
 
     const model = await this.studentModel.getStudentModel(userId);
-    const lowTopics = model?.filter((m: any) => m.proficiency < 0.5) ?? [];
+    const lowTopics = model?.filter((m) => m.proficiency < 0.5) ?? [];
 
     result.sort((a, b) => a.progress - b.progress);
 

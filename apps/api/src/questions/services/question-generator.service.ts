@@ -48,7 +48,7 @@ export class QuestionGeneratorService {
         data: {
           text: q.text, difficulty: q.difficulty ?? 'MEDIUM', bloomLevel: q.bloomLevel ?? 'REMEMBER',
           explanation: q.explanation, topicId,
-          alternatives: { create: q.alternatives?.map((a: any) => ({ text: a.text, isCorrect: a.isCorrect ?? false, feedback: a.feedback })) ?? [] },
+          alternatives: { create: q.alternatives?.map((a: { text: string; isCorrect: boolean; feedback?: string }) => ({ text: a.text, isCorrect: a.isCorrect ?? false, feedback: a.feedback })) ?? [] },
         },
         include: { alternatives: true },
       });

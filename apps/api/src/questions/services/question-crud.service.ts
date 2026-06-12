@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import type { QuestionType, QuestionDifficulty, BloomLevel } from '../../generated/prisma/enums';
+import type { QuestionType, QuestionDifficulty, BloomLevel, QuestionStatus } from '../../generated/prisma/enums';
+import type { QuestionWhereInput, QuestionOrderByWithRelationInput, QuestionUpdateInput } from '../../generated/prisma/models';
 
 @Injectable()
 export class QuestionCrudService {
@@ -12,17 +13,16 @@ export class QuestionCrudService {
     bloomLevel?: string; dateFrom?: string; dateTo?: string; sort?: string;
     page?: number; limit?: number;
   }) {
-    const where: any = {};
+    const where: QuestionWhereInput = {};
     if (filters.search) where.text = { contains: filters.search, mode: 'insensitive' };
     if (filters.topicId) where.topicId = filters.topicId;
     if (filters.examId) where.examId = filters.examId;
-    if (filters.difficulty) where.difficulty = filters.difficulty;
-    if (filters.type) where.type = filters.type;
-    if (filters.status) where.status = filters.status;
-    if (filters.bloomLevel) where.bloomLevel = filters.bloomLevel;
+    if (filters.difficulty) where.difficulty = filters.difficulty as QuestionDifficulty;
+    if (filters.type) where.type = filters.type as QuestionType;
+    if (filters.status) where.status = filters.status as QuestionStatus;
+    if (filters.bloomLevel) where.bloomLevel = filters.bloomLevel as BloomLevel;
     if (filters.tag) where.tags = { some: { tag: filters.tag } };
-    if (filters.board) where.exam = { board: filters.board };
-    if (filters.year) where.exam = { ...where.exam, year: Number(filters.year) };
+    if (filters.board || filters.year) where.exam = { ...(filters.board ? { board: filters.board } : {}), ...(filters.year ? { year: Number(filters.year) } : {}) };
     if (filters.dateFrom || filters.dateTo) {
       where.createdAt = {};
       if (filters.dateFrom) where.createdAt.gte = new Date(filters.dateFrom);
@@ -33,7 +33,7 @@ export class QuestionCrudService {
     const limit = Math.min(filters.limit ?? 20, 100);
     const skip = (page - 1) * limit;
 
-    let orderBy: any = { createdAt: 'desc' };
+    let orderBy: QuestionOrderByWithRelationInput = { createdAt: 'desc' };
     if (filters.sort === 'recent') orderBy = { createdAt: 'desc' };
     else if (filters.sort === 'oldest') orderBy = { createdAt: 'asc' };
     else if (filters.sort === 'difficulty_desc') orderBy = { difficulty: 'desc' };
@@ -88,7 +88,7 @@ export class QuestionCrudService {
   async update(id: string, data: Record<string, unknown>) {
     const q = await this.prisma.question.findUnique({ where: { id } });
     if (!q) throw new NotFoundException('Questão não encontrada');
-    return this.prisma.question.update({ where: { id }, data, include: { topic: true, exam: true, alternatives: true, tags: true } });
+    return this.prisma.question.update({ where: { id }, data: data as QuestionUpdateInput, include: { topic: true, exam: true, alternatives: true, tags: true } });
   }
 
   async remove(id: string) {

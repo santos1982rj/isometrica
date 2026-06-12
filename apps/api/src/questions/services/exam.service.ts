@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateExamDto } from '../dto/create-exam.dto';
 import { UpdateExamDto } from '../dto/update-exam.dto';
+import type { ExamWhereInput } from '../../generated/prisma/models';
 
 @Injectable()
 export class ExamService {
@@ -13,7 +14,7 @@ export class ExamService {
   }
 
   async listExams(filters: { search?: string; board?: string; area?: string; page?: number; limit?: number }) {
-    const where: any = {};
+    const where: ExamWhereInput = {};
     if (filters.search) where.name = { contains: filters.search, mode: 'insensitive' };
     if (filters.board) where.board = filters.board;
     if (filters.area) where.area = filters.area;
@@ -72,7 +73,7 @@ export class ExamService {
       },
     });
     if (!exam) throw new NotFoundException('Exame não encontrado');
-    return exam as any;
+    return exam;
   }
 
   async updateExam(id: string, dto: UpdateExamDto) {

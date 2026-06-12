@@ -25,6 +25,7 @@ import {
   SidebarInset,
   SidebarTrigger,
 } from '@/components/ui/sidebar'
+import type { LucideIcon } from 'lucide-react'
 import {
   LayoutDashboard,
   BookOpen,
@@ -87,7 +88,7 @@ const menuAdmin = [
 
 function SearchBar() {
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState<any>(null)
+  const [results, setResults] = useState<{ courses?: { id: string; name: string }[]; lessons?: { id: string; title: string }[] } | null>(null)
   const [open, setOpen] = useState(false)
   const router = useRouter()
   const ref = useRef<HTMLDivElement>(null)
@@ -114,20 +115,20 @@ function SearchBar() {
       <Search className="size-3.5 shrink-0" />
       <input value={query} onChange={e => handleSearch(e.target.value)} placeholder="Buscar..."
         className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground" />
-      {open && results && (results.courses?.length > 0 || results.lessons?.length > 0) && (
+      {open && results && ((results.courses?.length ?? 0) > 0 || (results.lessons?.length ?? 0) > 0) && (
         <div className="absolute left-0 right-0 top-full mt-2 rounded-xl border border-border bg-card shadow-lg p-2 z-50">
-          {results.courses?.length > 0 && (
+          {results.courses && results.courses.length > 0 && (
             <div className="mb-2"><p className="px-2 py-1 text-[9px] font-semibold uppercase text-muted-foreground">Cursos</p>
-              {results.courses.slice(0, 3).map((c: any) => (
+              {results.courses.slice(0, 3).map((c: { id: string; name: string }) => (
                 <button key={c.id} onClick={() => goTo(`/cursos/${c.id}`)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs hover:bg-muted transition-colors text-left">
                   <BookOpen className="size-3 shrink-0 text-isometrica-accent" /> {c.name}
                 </button>
               ))}
             </div>
           )}
-          {results.lessons?.length > 0 && (
+          {results.lessons && results.lessons.length > 0 && (
             <div><p className="px-2 py-1 text-[9px] font-semibold uppercase text-muted-foreground">Aulas</p>
-              {results.lessons.slice(0, 4).map((l: any) => (
+              {results.lessons.slice(0, 4).map((l: { id: string; title: string }) => (
                 <button key={l.id} onClick={() => goTo(`/aulas/${l.id}`)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs hover:bg-muted transition-colors text-left">
                   <Play className="size-3 shrink-0 text-isometrica-accent" /> {l.title}
                 </button>
@@ -197,7 +198,7 @@ function SidebarNav({ pathname, role }: { pathname: string; role: string }) {
         <SidebarGroupLabel>Navegação</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
-            {menuEstudante.map((item: any) => (
+            {menuEstudante.map((item: typeof menuEstudante[number]) => (
               <SidebarMenuItem key={item.href}>
                 {item.modal ? (
                   <SidebarMenuButton isActive={false} onClick={() => openTutor()}>

@@ -3,6 +3,13 @@ import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 
+interface JwtUser {
+  id: string;
+  email: string;
+  papel: string;
+  nome: string | null;
+}
+
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
   constructor(private reflector: Reflector) {
@@ -20,10 +27,9 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     return super.canActivate(context);
   }
 
-  handleRequest(err: any, user: any) {
-    if (err || !user) {
-      throw err || new UnauthorizedException('Token inválido ou expirado');
-    }
+  handleRequest<TUser extends JwtUser = JwtUser>(err: unknown, user: TUser | false): TUser {
+    if (err) throw err;
+    if (!user) throw new UnauthorizedException('Token inválido ou expirado');
     return user;
   }
 }

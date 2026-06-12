@@ -4,7 +4,7 @@ import { tap } from 'rxjs/operators';
 
 @Injectable()
 export class CacheHeaderInterceptor implements NestInterceptor {
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const response = context.switchToHttp().getResponse();
     const request = context.switchToHttp().getRequest();
 

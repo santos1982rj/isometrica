@@ -8,8 +8,17 @@ const itemAnim = {
   show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] as const } },
 }
 
+interface Achievement {
+  name: string
+  desc: string
+  icon: React.ComponentType<{ className?: string }>
+  unlocked?: boolean
+  progress?: number
+  target?: number
+}
+
 interface AchievementsGridProps {
-  achievements: any[]
+  achievements: Achievement[]
   unlockedAchievements: { name: string }[]
 }
 

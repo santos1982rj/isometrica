@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/contexts/auth-context'
 import { useExams, useExamBoards, useIniciarSimulado } from '@/lib/queries'
+import type { ExamListItem } from '@/lib/api'
 import { Timer, HelpCircle, Clock, Search, Award, ChevronRight, Loader2 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -111,7 +112,7 @@ export default function ConcursoPage() {
         </motion.div>
       ) : (
         <motion.div variants={container} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {exams.map((exam: any) => (
+          {exams.map((exam: ExamListItem) => (
             <motion.div key={exam.id} variants={itemAnim}>
               <Card
                 className="cursor-pointer transition-all hover:border-isometrica-accent/30 hover:shadow-sm"

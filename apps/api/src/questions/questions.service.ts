@@ -14,14 +14,14 @@ export class QuestionsService {
     private readonly generator: QuestionGeneratorService,
   ) {}
 
-  list(filters: QuestionFiltersDto) { return this.crud.list(filters as any); }
+  list(filters: QuestionFiltersDto) { return this.crud.list(filters); }
   findById(id: string) { return this.crud.findById(id); }
-  create(data: CreateQuestionDto) { return this.crud.create(data as any); }
-  update(id: string, data: UpdateQuestionDto) { return this.crud.update(id, data as any); }
+  create(data: CreateQuestionDto) { return this.crud.create(data); }
+  update(id: string, data: UpdateQuestionDto) { return this.crud.update(id, data as unknown as Record<string, unknown>); }
   remove(id: string) { return this.crud.remove(id); }
 
   getTags() { return this.examService.getTags(); }
-  listExams(filters: QuestionFiltersDto) { return this.examService.listExams(filters as any); }
+  listExams(filters: QuestionFiltersDto) { return this.examService.listExams(filters); }
   createExam(data: CreateExamDto) { return this.examService.createExam(data); }
   getExamBoards() { return this.examService.getExamBoards(); }
   getExamSimulado(examId: string, limit?: number) { return this.examService.getExamSimulado(examId, limit); }
