@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
 import { useConversations, useConversation, useCreateConversation, useSendMessage } from '@/lib/queries';
 import type { Mensagem } from '@/lib/types';
@@ -134,9 +133,9 @@ export function useTutorChat({ initialValue = '' }: UseTutorChatOptions = {}): U
         }
       }
 
-      const dados = await api.ai.obterConversa(id!);
-      const msgs = (dados.messages ?? []) as Mensagem[];
-      setMensagens(msgs);
+      setMensagens((prev) => prev.map((m) =>
+        m.id === msgId ? { ...m, content: fullContent } : m
+      ));
       setStreamContent('');
     } catch {
       setMensagens((prev) => [
