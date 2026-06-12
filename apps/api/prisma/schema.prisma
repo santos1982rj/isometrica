@@ -293,6 +293,7 @@ model SimuladoAnswer {
   question Question        @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
   @@index([sessionId])
+  @@index([questionId])
 }
 
 model QuestionTag {
@@ -571,7 +572,7 @@ model Payment {
   gatewayId    String?
   createdAt    DateTime @default(now())
 
-  subscription Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([subscriptionId])
@@ -593,14 +594,14 @@ model Coupon {
 model Certificate {
   id          String   @id @default(cuid())
   userId      String
-  courseId    String
+  courseId    String?
   title       String
   proficiency Float    @default(0)
   totalHours  Int      @default(0)
   createdAt   DateTime @default(now())
 
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course? @relation(fields: [courseId], references: [id], onDelete: SetNull)
 
   @@unique([userId, courseId])
   @@index([userId])
