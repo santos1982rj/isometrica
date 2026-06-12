@@ -44,27 +44,27 @@ export class ContentService {
   }
 
   async findLesson(id: string) {
-    const lesson = await this.prisma.lesson.findUnique({
-      where: { id },
-      include: {
-        module: {
-          include: {
-            course: { include: { subject: true } },
-            lessons: { orderBy: { order: 'asc' } },
+    const [lesson, creator] = await Promise.all([
+      this.prisma.lesson.findUnique({
+        where: { id },
+        include: {
+          module: {
+            include: {
+              course: { include: { subject: true } },
+              lessons: { orderBy: { order: 'asc' } },
+            },
           },
         },
-      },
-    });
+      }),
+      this.prisma.user.findFirst({
+        where: { role: 'PROFESSOR' },
+        select: { id: true, name: true, imageUrl: true, title: true, bio: true, lattes: true, linkedin: true, instagram: true, twitter: true },
+      }),
+    ]);
     if (!lesson) throw new NotFoundException('Aula não encontrada');
 
     const moduleLessons = lesson.module.lessons;
     const currentIdx = moduleLessons.findIndex((l) => l.id === id);
-
-    // Get the first user as course creator (mock for now, will be proper owner later)
-    const creator = await this.prisma.user.findFirst({
-      where: { role: 'PROFESSOR' },
-      select: { id: true, name: true, imageUrl: true, title: true, bio: true, lattes: true, linkedin: true, instagram: true, twitter: true },
-    });
 
     return {
       ...lesson,

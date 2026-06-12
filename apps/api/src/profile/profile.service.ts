@@ -6,41 +6,38 @@ export class ProfileService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getMyProfile(userId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true, name: true, email: true, imageUrl: true, role: true,
-        university: true, period: true, title: true, bio: true,
-        lattes: true, linkedin: true, instagram: true, twitter: true,
-        createdAt: true,
-      },
-    });
+    const [user, gamification, certificates, enrollments, attempts] = await Promise.all([
+      this.prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true, name: true, email: true, imageUrl: true, role: true,
+          university: true, period: true, title: true, bio: true,
+          lattes: true, linkedin: true, instagram: true, twitter: true,
+          createdAt: true,
+        },
+      }),
+      this.prisma.gamificationProfile.findUnique({ where: { userId } }),
+      this.prisma.certificate.findMany({
+        where: { userId },
+        include: { course: true },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+      }),
+      this.prisma.enrollment.findMany({
+        where: { userId },
+        include: { course: true },
+      }),
+      this.prisma.questionAttempt.findMany({ where: { userId } }),
+    ]);
+
     if (!user) throw new NotFoundException('Usuário não encontrado');
 
-    const gamification = await this.prisma.gamificationProfile.findUnique({ where: { userId } });
-    const certificates = await this.prisma.certificate.findMany({
-      where: { userId },
-      include: { course: true },
-      orderBy: { createdAt: 'desc' },
-      take: 10,
-    });
-
-    const enrollments = await this.prisma.enrollment.findMany({
-      where: { userId },
-      include: { course: true },
-    });
-
-    const attempts = await this.prisma.questionAttempt.findMany({ where: { userId } });
     const totalAttempts = attempts.length;
     const correctAttempts = attempts.filter((a) => a.correct).length;
 
     const coursesCreated = user.role === 'PROFESSOR' || user.role === 'ADMIN'
       ? await this.prisma.course.count({ where: { /* TODO: ownerId when added */ } })
       : 0;
-
-    const totalStudents = user.role === 'PROFESSOR'
-      ? await this.prisma.enrollment.groupBy({ by: ['courseId'], _count: { userId: true } })
-      : [];
 
     return {
       user,
