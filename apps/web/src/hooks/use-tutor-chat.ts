@@ -110,7 +110,9 @@ export function useTutorChat({ initialValue = '' }: UseTutorChatOptions = {}): U
       let buffer = '';
       let fullContent = '';
 
-      while (true) {
+      let streamingDone = false;
+
+      while (!streamingDone) {
         const { done, value } = await reader.read();
         if (done) break;
 
@@ -122,7 +124,7 @@ export function useTutorChat({ initialValue = '' }: UseTutorChatOptions = {}): U
           if (line.startsWith('data: ')) {
             try {
               const parsed = JSON.parse(line.slice(6));
-              if (parsed.done) break;
+              if (parsed.done) { streamingDone = true; break; }
               if (parsed.token) {
                 fullContent += parsed.token;
                 setStreamContent(fullContent);

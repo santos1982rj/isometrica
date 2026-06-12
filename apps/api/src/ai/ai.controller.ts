@@ -26,11 +26,13 @@ export class AiController {
     // User message is already saved by the frontend before calling stream
     const reply = await this.aiService.streamReply(id, res);
 
+    // Close the SSE connection BEFORE saving to DB — otherwise the frontend's
+    // reader.read() hangs waiting for more data after receiving {done: true}
+    res.end();
+
     if (reply) {
       await this.aiService.addMessage({ conversationId: id, role: 'assistant', content: reply });
     }
-
-    res.end();
   }
 
   @Get('conversations/:id')
