@@ -1,0 +1,17 @@
+{
+  "version": "2.13",
+  "children": [
+    {
+      "type": "frame",
+      "id": "base",
+      "x": 0,
+      "y": 0,
+      "name": "Base Frame",
+      "clip": true,
+      "width": 1440,
+      "height": 900,
+      "fill": "#f8fafc",
+      "layout": "none"
+    }
+  ]
+}

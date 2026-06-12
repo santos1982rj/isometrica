@@ -2,6 +2,8 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useState, type ReactNode } from 'react'
+import { toast } from 'sonner'
+import { ApiError } from '@/lib/api'
 
 export function QueryProvider({ children }: { children: ReactNode }) {
   const [queryClient] = useState(

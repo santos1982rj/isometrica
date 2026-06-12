@@ -9,6 +9,7 @@ export class QuestionCrudService {
   async list(filters: {
     search?: string; topicId?: string; examId?: string; difficulty?: string;
     type?: string; status?: string; tag?: string; board?: string; year?: string;
+    bloomLevel?: string; dateFrom?: string; dateTo?: string; sort?: string;
     page?: number; limit?: number;
   }) {
     const where: any = {};
@@ -18,19 +19,31 @@ export class QuestionCrudService {
     if (filters.difficulty) where.difficulty = filters.difficulty;
     if (filters.type) where.type = filters.type;
     if (filters.status) where.status = filters.status;
+    if (filters.bloomLevel) where.bloomLevel = filters.bloomLevel;
     if (filters.tag) where.tags = { some: { tag: filters.tag } };
     if (filters.board) where.exam = { board: filters.board };
     if (filters.year) where.exam = { ...where.exam, year: Number(filters.year) };
+    if (filters.dateFrom || filters.dateTo) {
+      where.createdAt = {};
+      if (filters.dateFrom) where.createdAt.gte = new Date(filters.dateFrom);
+      if (filters.dateTo) where.createdAt.lte = new Date(filters.dateTo);
+    }
 
     const page = filters.page ?? 1;
     const limit = Math.min(filters.limit ?? 20, 100);
     const skip = (page - 1) * limit;
 
+    let orderBy: any = { createdAt: 'desc' };
+    if (filters.sort === 'recent') orderBy = { createdAt: 'desc' };
+    else if (filters.sort === 'oldest') orderBy = { createdAt: 'asc' };
+    else if (filters.sort === 'difficulty_desc') orderBy = { difficulty: 'desc' };
+    else if (filters.sort === 'difficulty_asc') orderBy = { difficulty: 'asc' };
+
     const [data, total] = await Promise.all([
       this.prisma.question.findMany({
         where, skip, take: limit,
         include: { topic: { include: { subject: true } }, exam: true, alternatives: true, tags: true, stats: true },
-        orderBy: { createdAt: 'desc' },
+        orderBy,
       }),
       this.prisma.question.count({ where }),
     ]);

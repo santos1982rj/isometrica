@@ -527,6 +527,7 @@ model Mission {
 
   profile GamificationProfile @relation(fields: [gamificationProfileId], references: [id], onDelete: Cascade)
 
+  @@unique([gamificationProfileId, name])
   @@index([gamificationProfileId])
 }
 

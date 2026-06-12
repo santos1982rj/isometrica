@@ -1,7 +1,7 @@
 'use client'
 
-import Link from 'next/link'
 import { motion } from 'framer-motion'
+import { useTutor } from '@/contexts/tutor-context'
 import { Brain, ChevronRight } from 'lucide-react'
 
 const itemAnim = {
@@ -10,6 +10,7 @@ const itemAnim = {
 }
 
 export function CtaBanner() {
+  const { openTutor } = useTutor()
   return (
     <motion.div variants={itemAnim}>
       <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-[#0d1b2a] to-[#1b2d45] p-6 text-white">
@@ -27,13 +28,13 @@ export function CtaBanner() {
               </p>
             </div>
           </div>
-          <Link
-            href="/tutor"
+          <button
+            onClick={() => openTutor()}
             className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-isometrica-accent to-[#f07a4a] px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-isometrica-accent/25 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-isometrica-accent/30"
           >
             Praticar agora
             <ChevronRight className="size-4" />
-          </Link>
+          </button>
         </div>
       </div>
     </motion.div>

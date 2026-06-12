@@ -127,7 +127,7 @@ export class GamificationService {
     const profile = await this.ensureProfile(userId);
 
     const mission = await this.prisma.mission.upsert({
-      where: { id: missionName },
+      where: { gamificationProfileId_name: { gamificationProfileId: profile.id, name: missionName } },
       create: { gamificationProfileId: profile.id, name: missionName, progress, target },
       update: { progress: Math.min(progress, target), completed: progress >= target },
     });

@@ -13,14 +13,14 @@ export class ContentController {
   @Post('modules/:moduleId/lessons')
   @Roles(UserRole.PROFESSOR, UserRole.ADMIN)
   @UsePipes(new SanitizePipe())
-  createLesson(@Param('moduleId') moduleId: string, @Body() body: { title: string; type: string; order: number; content?: string; videoUrl?: string; free?: boolean }) {
+  createLesson(@Param('moduleId') moduleId: string, @Body() body: { title: string; type: string; order: number; content?: string; contentUrl?: string; free?: boolean }) {
     return this.contentService.createLesson(moduleId, body);
   }
 
   @Put('lessons/:id')
   @Roles(UserRole.PROFESSOR, UserRole.ADMIN)
   @UsePipes(new SanitizePipe())
-  updateLesson(@Param('id') id: string, @Body() body: { title?: string; content?: string; videoUrl?: string }) {
+  updateLesson(@Param('id') id: string, @Body() body: { title?: string; content?: string; contentUrl?: string }) {
     return this.contentService.updateLesson(id, body);
   }
 

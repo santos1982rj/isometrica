@@ -353,6 +353,62 @@ export function useExams(params?: Record<string, string>) {
   });
 }
 
+export function useExamBoards() {
+  return useQuery<string[]>({
+    queryKey: ['questions', 'exams', 'boards'],
+    queryFn: () => api.questions.boards(),
+    staleTime: 60_000,
+  });
+}
+
+export function useExam(id: string) {
+  return useQuery({
+    queryKey: ['questions', 'exams', id],
+    queryFn: () => api.questions.obterExame(id),
+    enabled: !!id,
+  });
+}
+
+export function useCreateExam() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Parameters<typeof api.questions.criarExame>[0]) => api.questions.criarExame(data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['questions', 'exams'] }) },
+  });
+}
+
+export function useUpdateExam() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => api.questions.atualizarExame(id, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['questions', 'exams'] }) },
+  });
+}
+
+export function useDeleteExam() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.questions.removerExame(id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['questions', 'exams'] }) },
+  });
+}
+
+export function useIniciarSimulado() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (examId: string) => api.questions.iniciarSimulado(examId),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['simulado'] }) },
+  });
+}
+
+export function useResultadoSimulado(sessionId: string) {
+  return useQuery({
+    queryKey: ['simulado', 'resultado', sessionId],
+    queryFn: () => api.questions.resultadoSimulado(sessionId),
+    enabled: !!sessionId,
+  });
+}
+
 export function useCreateQuestion() {
   const qc = useQueryClient();
   return useMutation({

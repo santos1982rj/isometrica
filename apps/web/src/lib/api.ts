@@ -1,4 +1,15 @@
+import { toast } from 'sonner';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? '/api';
+
+export class ApiError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+  }
+}
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const headers: Record<string, string> = {
@@ -13,12 +24,19 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   });
 
   if (res.status === 401) {
-    return Promise.reject(new Error('Não autorizado'));
+    if (typeof window !== 'undefined' && !window.location.pathname.includes('/entrar')) {
+      window.location.href = '/entrar';
+    }
+    throw new ApiError('Sessão expirada. Faça login novamente.', 401);
   }
 
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: 'Erro na requisição' }));
-    throw new Error(error.message || error.statusCode);
+    const error = await res.json().catch(() => ({ message: 'Erro na requisição', statusCode: res.status }));
+    const message = error.message || error.statusCode || `Erro ${res.status}`;
+    if (res.status >= 500) {
+      console.error(`[API] ${res.status} ${path}:`, error);
+    }
+    throw new ApiError(message, res.status);
   }
 
   return res.json();
@@ -79,9 +97,9 @@ export const api = {
     atualizarModulo: (id: string, data: { name?: string; order?: number }) =>
       request<Modulo>(`/modules/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     removerModulo: (id: string) => request<{ message: string }>(`/modules/${id}`, { method: 'DELETE' }),
-    criarAula: (moduleId: string, data: { title: string; type: string; order: number; content?: string; videoUrl?: string; free?: boolean }) =>
+    criarAula: (moduleId: string, data: { title: string; type: string; order: number; content?: string; contentUrl?: string; free?: boolean }) =>
       request<Aula>(`/modules/${moduleId}/lessons`, { method: 'POST', body: JSON.stringify(data) }),
-    atualizarAula: (id: string, data: { title?: string; content?: string; videoUrl?: string }) =>
+    atualizarAula: (id: string, data: { title?: string; content?: string; contentUrl?: string }) =>
       request<Aula>(`/lessons/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     removerAula: (id: string) => request<{ message: string }>(`/lessons/${id}`, { method: 'DELETE' }),
 
@@ -180,12 +198,20 @@ export const api = {
     remover: (id: string) => request<{ message: string }>(`/questions/${id}`, { method: 'DELETE' }),
     arvore: () => request<QuestionTreeItem[]>('/questions/tree'),
     tags: () => request<QuestionTag[]>('/questions/tags'),
-    exames: (params?: Record<string, string>) => request<{ exams: ExamListResponse[]; total: number }>(`/questions/exams?${new URLSearchParams(params ?? {}).toString()}`),
-    criarExame: (data: { title: string; description?: string; board: string; year?: string; questionIds: string[] }) =>
-      request<ExamListResponse>('/questions/exams', { method: 'POST', body: JSON.stringify(data) }),
+    exames: (params?: Record<string, string>) => request<any>(`/questions/exams?${new URLSearchParams(params ?? {}).toString()}`),
+    criarExame: (data: { name: string; board?: string; year?: number; timeLimit?: number; difficulty?: string; area?: string; questionIds?: string[] }) =>
+      request<any>('/questions/exams', { method: 'POST', body: JSON.stringify(data) }),
+    boards: () => request<string[]>('/questions/exams/boards'),
+    obterExame: (id: string) => request<any>(`/questions/exams/${id}`),
+    atualizarExame: (id: string, data: any) => request<any>(`/questions/exams/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    removerExame: (id: string) => request<{ message: string }>(`/questions/exams/${id}`, { method: 'DELETE' }),
     stats: (id: string) => request<QuestionStats>(`/questions/stats/${id}`),
     dominio: (topicId: string) => request<TopicMastery>(`/questions/mastery/${topicId}`),
     simulado: (examId: string, limit = 10) => request<SimuladoResponse>(`/questions/simulado/${examId}?limit=${limit}`),
+    iniciarSimulado: (examId: string) => request<any>(`/questions/simulado/${examId}/start`, { method: 'POST' }),
+    submeterSimulado: (sessionId: string, answers: { questionId: string; selectedId: string | null; timeSpent: number }[]) =>
+      request<any>(`/questions/simulado/${sessionId}/submit`, { method: 'PUT', body: JSON.stringify({ answers }) }),
+    resultadoSimulado: (sessionId: string) => request<any>(`/questions/simulado/${sessionId}/result`),
     gerarComIA: (topicId: string, count = 3, difficulty?: string) =>
       request<Questao[]>(`/questions/generate/${topicId}`, { method: 'POST', body: JSON.stringify({ count, difficulty }) }),
   },

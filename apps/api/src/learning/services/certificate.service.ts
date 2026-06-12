@@ -24,8 +24,9 @@ export class CertificateService {
       throw new BadRequestException('Complete todas as aulas para obter o certificado');
     }
 
+    const subjectFilter = course.subjectId ? { question: { topic: { subjectId: course.subjectId } } } : {};
     const attempts = await this.prisma.questionAttempt.findMany({
-      where: { userId, question: { topic: { subjectId: course.subjectId ?? undefined } } },
+      where: { userId, ...subjectFilter },
     });
     const acertos = attempts.filter((a) => a.correct).length;
     const proficiency = attempts.length > 0 ? Math.round((acertos / attempts.length) * 100) : 0;

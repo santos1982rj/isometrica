@@ -3,7 +3,7 @@ import { QuestionCrudService } from './services/question-crud.service';
 import { ExamService } from './services/exam.service';
 import { QuestionStatsService } from './services/question-stats.service';
 import { QuestionGeneratorService } from './services/question-generator.service';
-import { QuestionFiltersDto, CreateQuestionDto, UpdateQuestionDto, CreateExamDto } from './dto';
+import { QuestionFiltersDto, CreateQuestionDto, UpdateQuestionDto, CreateExamDto, UpdateExamDto, SubmitSimuladoDto } from './dto';
 
 @Injectable()
 export class QuestionsService {
@@ -22,11 +22,21 @@ export class QuestionsService {
 
   getTags() { return this.examService.getTags(); }
   listExams(filters: QuestionFiltersDto) { return this.examService.listExams(filters as any); }
-  createExam(data: CreateExamDto) { return this.examService.createExam(data as any); }
+  createExam(data: CreateExamDto) { return this.examService.createExam(data); }
   getExamBoards() { return this.examService.getExamBoards(); }
   getExamSimulado(examId: string, limit?: number) { return this.examService.getExamSimulado(examId, limit); }
   getTopicTree() { return this.examService.getTopicTree(); }
   getTopicMastery(userId: string, topicId: string) { return this.examService.getTopicMastery(userId, topicId); }
+
+  getExamById(id: string) { return this.examService.getExamById(id); }
+  updateExam(id: string, data: UpdateExamDto) { return this.examService.updateExam(id, data); }
+  deleteExam(id: string) { return this.examService.deleteExam(id); }
+
+  startSimulado(userId: string, examId: string) { return this.examService.startSimulado(userId, examId); }
+  submitSimulado(sessionId: string, userId: string, dto: SubmitSimuladoDto) {
+    return this.examService.submitSimulado(sessionId, userId, dto.answers);
+  }
+  getSimuladoResult(sessionId: string) { return this.examService.getSimuladoResult(sessionId); }
 
   getQuestionStats(questionId: string) { return this.stats.getQuestionStats(questionId); }
 

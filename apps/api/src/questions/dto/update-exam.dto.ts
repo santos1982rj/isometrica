@@ -1,9 +1,9 @@
-import { IsString, IsOptional, IsArray, IsInt, MinLength } from 'class-validator';
+import { IsString, IsOptional, IsArray, IsInt } from 'class-validator';
 
-export class CreateExamDto {
+export class UpdateExamDto {
   @IsString()
-  @MinLength(1)
-  name!: string;
+  @IsOptional()
+  name?: string;
 
   @IsString()
   @IsOptional()

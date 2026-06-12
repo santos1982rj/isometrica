@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
+import { TutorProvider, useTutor } from '@/contexts/tutor-context'
 import { cn } from '@/lib/utils'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { useState, useRef, useEffect } from 'react'
@@ -56,7 +57,7 @@ const menuEstudante = [
   { rotulo: 'Questões', href: '/banco-questoes', icone: FileQuestion },
   { rotulo: 'Meus Cursos', href: '/cursos', icone: BookOpen },
   { rotulo: 'Gamificação', href: '/gamificacao', icone: Gamepad2 },
-  { rotulo: 'Tutor IA', href: '/tutor', icone: Bot },
+  { rotulo: 'Tutor IA', href: '/tutor', icone: Bot, modal: true },
   { rotulo: 'Progresso', href: '/progresso', icone: TrendingUp },
   { rotulo: 'Feed de Erros', href: '/erros', icone: AlertTriangle },
   { rotulo: 'Modo Concurso', href: '/concurso', icone: Timer },
@@ -71,6 +72,7 @@ const menuProfessor = [
   { rotulo: 'Dashboard', href: '/professor/dashboard', icone: LayoutDashboard },
   { rotulo: 'Meus Cursos', href: '/professor/cursos', icone: BookOpen },
   { rotulo: 'Criar Curso', href: '/professor/cursos/novo', icone: FilePlus },
+  { rotulo: 'Concursos', href: '/professor/concursos', icone: FileQuestion },
   { rotulo: 'Turmas', href: '#', icone: Users },
 ]
 
@@ -139,6 +141,7 @@ function SearchBar() {
 }
 
 function SidebarNav({ pathname, role }: { pathname: string; role: string }) {
+  const { openTutor } = useTutor()
   const isActive = (href: string) => {
     if (href === '#') return false
     return pathname === href || pathname.startsWith(href + '/')
@@ -194,14 +197,21 @@ function SidebarNav({ pathname, role }: { pathname: string; role: string }) {
         <SidebarGroupLabel>Navegação</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
-            {menuEstudante.map((item) => (
+            {menuEstudante.map((item: any) => (
               <SidebarMenuItem key={item.href}>
-                <Link href={item.href}>
-                  <SidebarMenuButton isActive={isActive(item.href)}>
+                {item.modal ? (
+                  <SidebarMenuButton isActive={false} onClick={() => openTutor()}>
                     <item.icone className="size-4" />
                     <span>{item.rotulo}</span>
                   </SidebarMenuButton>
-                </Link>
+                ) : (
+                  <Link href={item.href}>
+                    <SidebarMenuButton isActive={isActive(item.href)}>
+                      <item.icone className="size-4" />
+                      <span>{item.rotulo}</span>
+                    </SidebarMenuButton>
+                  </Link>
+                )}
               </SidebarMenuItem>
             ))}
           </SidebarMenu>
@@ -234,6 +244,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const homeHref = role === 'PROFESSOR' ? '/professor/dashboard' : role === 'ADMIN' ? '/admin/dashboard' : '/dashboard'
 
   return (
+    <TutorProvider>
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader className="border-b border-border px-5 py-4">
@@ -300,5 +311,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <main className="flex-1 p-5 lg:p-6">{children}</main>
       </SidebarInset>
     </SidebarProvider>
+    </TutorProvider>
   )
 }

@@ -26,20 +26,20 @@ export class ContentService {
     return { message: 'Módulo removido' };
   }
 
-  async createLesson(moduleId: string, data: { title: string; type: string; order: number; content?: string; videoUrl?: string; free?: boolean }) {
+  async createLesson(moduleId: string, data: { title: string; type: string; order: number; content?: string; contentUrl?: string; free?: boolean }) {
     const mod = await this.prisma.module.findUnique({ where: { id: moduleId } });
     if (!mod) throw new NotFoundException('Módulo não encontrado');
-    const { videoUrl, title, type, order, content, free } = data;
-    return this.prisma.lesson.create({ data: { title, type, order, content, free, contentUrl: videoUrl, moduleId } });
+    const { contentUrl, title, type, order, content, free } = data;
+    return this.prisma.lesson.create({ data: { title, type, order, content, free, contentUrl, moduleId } });
   }
 
-  async updateLesson(id: string, data: { title?: string; content?: string; videoUrl?: string }) {
+  async updateLesson(id: string, data: { title?: string; content?: string; contentUrl?: string }) {
     const lesson = await this.prisma.lesson.findUnique({ where: { id } });
     if (!lesson) throw new NotFoundException('Aula não encontrada');
-    const { videoUrl, ...rest } = data;
+    const { contentUrl, ...rest } = data;
     return this.prisma.lesson.update({
       where: { id },
-      data: videoUrl !== undefined ? { ...rest, contentUrl: videoUrl } : rest,
+      data: contentUrl !== undefined ? { ...rest, contentUrl } : rest,
     });
   }
 

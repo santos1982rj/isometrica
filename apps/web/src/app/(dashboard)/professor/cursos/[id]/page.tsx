@@ -37,7 +37,7 @@ interface Aula {
   type: string
   order: number
   content?: string
-  videoUrl?: string
+  contentUrl?: string
 }
 
 export default function CursoDetalheProfessor(props: { params: Promise<{ id: string }> }) {
@@ -134,7 +134,7 @@ export default function CursoDetalheProfessor(props: { params: Promise<{ id: str
       setAulaTipo(aula.type as 'video' | 'text')
       setAulaOrdem(aula.order)
       setAulaConteudo(aula.content ?? '')
-      setAulaVideoUrl(aula.videoUrl ?? '')
+      setAulaVideoUrl(aula.contentUrl ?? '')
       setEditandoAula(aula.id)
     } else {
       setAulaTitulo('')
@@ -152,9 +152,9 @@ export default function CursoDetalheProfessor(props: { params: Promise<{ id: str
     setEnviando(true)
     try {
       if (editandoAula) {
-        await api.courses.atualizarAula(editandoAula, { title: aulaTitulo, content: aulaConteudo || undefined, videoUrl: aulaVideoUrl || undefined })
+        await api.courses.atualizarAula(editandoAula, { title: aulaTitulo, content: aulaConteudo || undefined, contentUrl: aulaVideoUrl || undefined })
       } else {
-        await createLesson.mutateAsync({ moduleId: showAulaForm, data: { title: aulaTitulo, type: aulaTipo, order: aulaOrdem, content: aulaConteudo || undefined, videoUrl: aulaVideoUrl || undefined } })
+        await createLesson.mutateAsync({ moduleId: showAulaForm, data: { title: aulaTitulo, type: aulaTipo, order: aulaOrdem, content: aulaConteudo || undefined, contentUrl: aulaVideoUrl || undefined } })
       }
       setShowAulaForm(null)
       setEditandoAula(null)

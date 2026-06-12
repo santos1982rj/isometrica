@@ -1,10 +1,10 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, Query, Req } from '@nestjs/common';
 import { QuestionsService } from './questions.service';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Public } from '../auth/decorators/public.decorator';
 import { UserRole } from '../generated/prisma/enums';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { CreateQuestionDto, UpdateQuestionDto, QuestionFiltersDto, CreateExamDto } from './dto';
+import { CreateQuestionDto, UpdateQuestionDto, QuestionFiltersDto, CreateExamDto, UpdateExamDto, SubmitSimuladoDto } from './dto';
 
 @Controller('questions')
 export class QuestionsController {
@@ -38,6 +38,12 @@ export class QuestionsController {
   @Public()
   getExamBoards() {
     return this.questionsService.getExamBoards();
+  }
+
+  @Get('exams/:id')
+  @Public()
+  getExamById(@Param('id') id: string) {
+    return this.questionsService.getExamById(id);
   }
 
   @Get('stats/:id')
@@ -91,6 +97,37 @@ export class QuestionsController {
   @Roles(UserRole.PROFESSOR, UserRole.ADMIN)
   createExam(@Body() dto: CreateExamDto) {
     return this.questionsService.createExam(dto);
+  }
+
+  @Put('exams/:id')
+  @Roles(UserRole.PROFESSOR, UserRole.ADMIN)
+  updateExam(@Param('id') id: string, @Body() dto: UpdateExamDto) {
+    return this.questionsService.updateExam(id, dto);
+  }
+
+  @Delete('exams/:id')
+  @Roles(UserRole.PROFESSOR, UserRole.ADMIN)
+  deleteExam(@Param('id') id: string) {
+    return this.questionsService.deleteExam(id);
+  }
+
+  @Post('simulado/:examId/start')
+  startSimulado(@Param('examId') examId: string, @CurrentUser('id') userId: string) {
+    return this.questionsService.startSimulado(userId, examId);
+  }
+
+  @Put('simulado/:sessionId/submit')
+  submitSimulado(
+    @Param('sessionId') sessionId: string,
+    @Body() dto: SubmitSimuladoDto,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.questionsService.submitSimulado(sessionId, userId, dto);
+  }
+
+  @Get('simulado/:sessionId/result')
+  getSimuladoResult(@Param('sessionId') sessionId: string) {
+    return this.questionsService.getSimuladoResult(sessionId);
   }
 
   @Post('import')

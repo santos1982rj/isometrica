@@ -121,6 +121,38 @@ describe('GamificationService', () => {
     });
   });
 
+  describe('updateMission', () => {
+    it('should upsert using compound unique on profileId+name, not id', async () => {
+      const mockProfile = { id: 'profile-1', userId: 'user-1', xp: 0, level: 1, streak: 0 };
+      mockPrisma.gamificationProfile.upsert.mockResolvedValue(mockProfile);
+      vi.spyOn(service, 'ensureProfile').mockResolvedValue(mockProfile as any);
+
+      mockPrisma.mission.upsert.mockResolvedValue({
+        id: 'mission-1',
+        gamificationProfileId: 'profile-1',
+        name: 'responder-10-questoes',
+        progress: 5,
+        target: 10,
+        completed: false,
+      });
+
+      const result = await service.updateMission('user-1', 'responder-10-questoes', 5, 10);
+
+      expect(mockPrisma.mission.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            gamificationProfileId_name: expect.objectContaining({
+              gamificationProfileId: 'profile-1',
+              name: 'responder-10-questoes',
+            }),
+          }),
+        }),
+      );
+      expect(result.progress).toBe(5);
+      expect(result.name).toBe('responder-10-questoes');
+    });
+  });
+
   describe('updateStreak', () => {
     it('should increment streak', async () => {
       const mockProfile = { id: '1', userId: 'user-1', streak: 5 };

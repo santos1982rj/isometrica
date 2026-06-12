@@ -17,7 +17,7 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get('token')?.value
       ?? request.headers.get('authorization')?.replace('Bearer ', '')
 
-  if (!token && !pathname.startsWith('/entrar') && !pathname.startsWith('/cadastro') && !pathname.startsWith('/esqueceu-senha') && !pathname.startsWith('/recuperar-senha')) {
+  if (!token) {
     const loginUrl = new URL('/entrar', request.url)
     loginUrl.searchParams.set('redirect', pathname)
     return NextResponse.redirect(loginUrl)

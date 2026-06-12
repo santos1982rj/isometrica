@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 import { cn } from '@/lib/utils'
+import { useTutor } from '@/contexts/tutor-context'
 import { FileQuestion, CheckCircle, Sparkles } from 'lucide-react'
 import type { Questao } from '@/lib/types'
 
@@ -13,6 +13,7 @@ interface QuizSectionProps {
 }
 
 export function QuizSection({ questoes, carregando, onAttempt }: QuizSectionProps) {
+  const { openTutor } = useTutor()
   const [respostas, setRespostas] = useState<Record<string, string>>({})
   const [quizEnviado, setQuizEnviado] = useState(false)
 
@@ -138,12 +139,12 @@ export function QuizSection({ questoes, carregando, onAttempt }: QuizSectionProp
               })}
             </div>
             {quizEnviado && !acertou && (
-              <Link
-                href={`/tutor?pergunta=${encodeURIComponent(`Explique por que errei esta questão: "${q.text}". A resposta correta era "${correta?.text}".`)}`}
+              <button
+                onClick={() => openTutor(`Explique por que errei esta questão: "${q.text}". A resposta correta era "${correta?.text}".`)}
                 className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-border px-3.5 py-2 text-[11px] font-semibold text-muted-foreground transition-all hover:border-isometrica-accent hover:text-isometrica-accent"
               >
                 <Sparkles className="size-3.5" /> Explique por que errei
-              </Link>
+              </button>
             )}
             {quizEnviado && q.explanation && (
               <p className="mt-3 rounded-lg bg-muted/50 px-4 py-2 text-xs text-muted-foreground leading-relaxed">

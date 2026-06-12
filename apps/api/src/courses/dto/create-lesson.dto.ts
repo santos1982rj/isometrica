@@ -17,7 +17,7 @@ export class CreateLessonDto {
 
   @IsString()
   @IsOptional()
-  videoUrl?: string;
+  contentUrl?: string;
 
   @IsBoolean()
   @IsOptional()

@@ -12,6 +12,38 @@ export class QuestionFiltersDto {
 
   @IsString()
   @IsOptional()
+  type?: string;
+
+  @IsString()
+  @IsOptional()
+  bloomLevel?: string;
+
+  @IsString()
+  @IsOptional()
+  tag?: string;
+
+  @IsString()
+  @IsOptional()
+  board?: string;
+
+  @IsString()
+  @IsOptional()
+  status?: string;
+
+  @IsString()
+  @IsOptional()
+  sort?: string;
+
+  @IsString()
+  @IsOptional()
+  dateFrom?: string;
+
+  @IsString()
+  @IsOptional()
+  dateTo?: string;
+
+  @IsString()
+  @IsOptional()
   search?: string;
 
   @IsNumber()

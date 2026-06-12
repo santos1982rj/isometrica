@@ -11,7 +11,7 @@ import {
   Check, ChevronRight, ArrowLeft, Crown, Plus, Trash2, Play, FileText, Edit3,
 } from 'lucide-react'
 
-type AulaTemp = { title: string; videoUrl: string; free: boolean; materials: { name: string; url: string }[] }
+type AulaTemp = { title: string; contentUrl: string; free: boolean; materials: { name: string; url: string }[] }
 type ModuloTemp = { name: string; order: number; aulas: AulaTemp[] }
 
 const steps = [
@@ -82,7 +82,7 @@ export default function CriarCursoPage() {
       materials.push({ name: novaAulaMaterialNome.trim(), url: novaAulaMaterial.trim() })
     }
     const novo = [...modulos]
-    novo[moduloEditando].aulas.push({ title: novaAulaTitulo.trim(), videoUrl: novaAulaUrl, free: novaAulaFree, materials })
+    novo[moduloEditando].aulas.push({ title: novaAulaTitulo.trim(), contentUrl: novaAulaUrl, free: novaAulaFree, materials })
     setModulos(novo)
     setNovaAulaTitulo('')
     setNovaAulaUrl('')
@@ -123,7 +123,7 @@ export default function CriarCursoPage() {
           const a = mod.aulas[i]
           await createLesson.mutateAsync({
             moduleId: modulo.id,
-            data: { title: a.title, type: 'video', order: i + 1, free: a.free, videoUrl: a.videoUrl || undefined },
+            data: { title: a.title, type: 'video', order: i + 1, free: a.free, contentUrl: a.contentUrl || undefined },
           })
         }
       }

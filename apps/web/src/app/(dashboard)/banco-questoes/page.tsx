@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils'
 import { Pagination } from '@/components/pagination'
 import { SubjectTree } from '@/components/banco-questoes/subject-tree'
 import { QuestionCard } from '@/components/banco-questoes/question-card'
-import { Search, FileQuestion } from 'lucide-react'
+import { Search, FileQuestion, ArrowUpDown } from 'lucide-react'
 
 type ExtendedQuestao = Questao & {
   exam?: { id: string; name: string } | null
@@ -34,14 +34,19 @@ export default function BancoQuestoesPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [topicSelecionado, setTopicSelecionado] = useState('')
   const [dificuldade, setDificuldade] = useState('')
+  const [tipoFiltro, setTipoFiltro] = useState('')
+  const [bloomFiltro, setBloomFiltro] = useState('')
+  const [sortBy, setSortBy] = useState('recent')
   const [arvoreAberta, setArvoreAberta] = useState<Record<string, boolean>>({})
   const [pagina, setPagina] = useState(1)
   const [questaoSelecionada, setQuestaoSelecionada] = useState<Questao | null>(null)
 
-  const params: Record<string, string> = { page: String(pagina), limit: '15' }
+  const params: Record<string, string> = { page: String(pagina), limit: '15', sort: sortBy }
   if (searchTerm) params.search = searchTerm
   if (topicSelecionado) params.topicId = topicSelecionado
   if (dificuldade) params.difficulty = dificuldade
+  if (tipoFiltro) params.type = tipoFiltro
+  if (bloomFiltro) params.bloomLevel = bloomFiltro
 
   const { data: questionsResponse, isLoading: carregando } = useQuestions(params)
   const { data: rawArvore = [] } = useSubjectTree()
@@ -55,7 +60,7 @@ export default function BancoQuestoesPage() {
   const statsQuestao = rawStats as ExtendedQuestionStats | undefined
   const dominio = rawDominio as ExtendedTopicMastery | undefined
 
-  useEffect(() => { setPagina(1) }, [topicSelecionado, dificuldade, searchTerm])
+  useEffect(() => { setPagina(1) }, [topicSelecionado, dificuldade, searchTerm, tipoFiltro, bloomFiltro, sortBy])
 
   function verQuestao(q: Questao) {
     setQuestaoSelecionada(q)
@@ -90,6 +95,32 @@ export default function BancoQuestoesPage() {
             ))}
           </div>
 
+          {/* Tipo */}
+          <div>
+            <p className="mb-1.5 text-[10px] font-semibold text-muted-foreground">TIPO</p>
+            <div className="flex flex-wrap gap-1.5">
+              {[{ v: '', l: 'Todos' }, { v: 'MULTIPLA_ESCOLHA', l: 'Múltipla' }, { v: 'VERDADEIRO_FALSO', l: 'V/F' }].map((t) => (
+                <button key={t.v} onClick={() => setTipoFiltro(t.v)}
+                  className={cn('rounded-full px-3 py-1 text-[10px] font-semibold transition-all', tipoFiltro === t.v ? 'bg-isometrica-accent/10 text-isometrica-accent' : 'bg-muted text-muted-foreground hover:bg-muted/80')}>
+                  {t.l}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Bloom Level */}
+          <div>
+            <p className="mb-1.5 text-[10px] font-semibold text-muted-foreground">NÍVEL DE BLOOM</p>
+            <div className="flex flex-wrap gap-1.5">
+              {[{ v: '', l: 'Todos' }, { v: 'REMEMBER', l: 'Lembrar' }, { v: 'UNDERSTAND', l: 'Entender' }, { v: 'APPLY', l: 'Aplicar' }].map((b) => (
+                <button key={b.v} onClick={() => setBloomFiltro(b.v)}
+                  className={cn('rounded-full px-3 py-1 text-[10px] font-semibold transition-all', bloomFiltro === b.v ? 'bg-isometrica-accent/10 text-isometrica-accent' : 'bg-muted text-muted-foreground hover:bg-muted/80')}>
+                  {b.l}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Árvore de Tópicos */}
           <SubjectTree
             arvore={arvore}
@@ -116,7 +147,16 @@ export default function BancoQuestoesPage() {
             <>
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>{total} questão{(total ?? 0) !== 1 ? 'ões' : ''}</span>
-                {topicSelecionado && <button onClick={() => setTopicSelecionado('')} className="text-isometrica-accent hover:underline">Limpar filtro</button>}
+                <div className="flex items-center gap-2">
+                  <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}
+                    className="rounded-lg border border-border bg-card px-2 py-1 text-[10px] outline-none">
+                    <option value="recent">Mais recentes</option>
+                    <option value="oldest">Mais antigas</option>
+                    <option value="difficulty_desc">Difícil primeiro</option>
+                    <option value="difficulty_asc">Fácil primeiro</option>
+                  </select>
+                  {topicSelecionado && <button onClick={() => setTopicSelecionado('')} className="text-isometrica-accent hover:underline">Limpar</button>}
+                </div>
               </div>
 
               {questoes.map((q) => (

@@ -6,7 +6,6 @@ export function validateEnv() {
     'JWT_SECRET',
     'GROQ_API_KEY',
     'REDIS_URL',
-    'RESEND_API_KEY',
   ] as const;
 
   const missing = required.filter(key => !process.env[key]);
@@ -14,6 +13,13 @@ export function validateEnv() {
     throw new Error(
       `Missing required environment variables: ${missing.join(', ')}`
     );
+  }
+
+  const optional = ['RESEND_API_KEY', 'CORS_ORIGIN'] as const;
+  for (const key of optional) {
+    if (!process.env[key]) {
+      console.warn(`[env] Optional variable ${key} is not set — some features may be disabled`);
+    }
   }
 
   if (process.env.JWT_SECRET && process.env.JWT_SECRET.length < 32) {
