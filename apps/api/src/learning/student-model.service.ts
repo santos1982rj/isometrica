@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CONFIG } from '../common/config';
 
 interface BktParams {
   prior: number;
@@ -10,14 +11,7 @@ interface BktParams {
   hintPenalty: number;
 }
 
-const DEFAULT_BKT: BktParams = {
-  prior: 0.5,
-  guess: 0.15,
-  slip: 0.1,
-  learnRate: 0.3,
-  timeBonus: 0.05,
-  hintPenalty: 0.1,
-};
+const DEFAULT_BKT: BktParams = { ...CONFIG.bkt };
 
 @Injectable()
 export class StudentModelService {

@@ -1,152 +1,25 @@
 'use client';
 
-import { useState, useEffect, useRef, Suspense } from 'react';
+import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { api } from '@/lib/api';
-import { useAuth } from '@/contexts/auth-context';
-import { useConversations, useConversation, useCreateConversation, useSendMessage } from '@/lib/queries';
-import { useQueryClient } from '@tanstack/react-query';
-import type { Mensagem, Conversa } from '@/lib/types';
+import { useTutorChat } from '@/hooks/use-tutor-chat';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Bot, User, Send, Sparkles } from 'lucide-react';
+import { Bot, Send, Sparkles } from 'lucide-react';
 
 function TutorContent() {
-  const { usuario } = useAuth();
   const searchParams = useSearchParams();
-  const queryClient = useQueryClient();
-  const [conversaId, setConversaId] = useState<string | null>(null);
-  const [mensagens, setMensagens] = useState<Mensagem[]>([]);
-  const [input, setInput] = useState(searchParams.get('pergunta') ?? '');
-  const [enviando, setEnviando] = useState(false);
-  const [streamContent, setStreamContent] = useState('');
-  const [carregando, setCarregando] = useState(true);
-  const fimRef = useRef<HTMLDivElement>(null);
-
-  const { data: conversasList } = useConversations(usuario?.id ?? '');
-  const { data: conversaData } = useConversation(conversaId ?? '');
-  const createConversation = useCreateConversation();
-  const sendMessage = useSendMessage();
-
-  // Set initial conversation ID from list
-  useEffect(() => {
-    if (conversasList && conversasList.length > 0 && !conversaId) {
-      setConversaId(conversasList[0].id);
-    }
-  }, [conversasList, conversaId]);
-
-  // Sync messages when conversation data loads/changes and not sending
-  useEffect(() => {
-    if (conversaData?.messages && !enviando) {
-      setMensagens(conversaData.messages as Mensagem[]);
-    }
-  }, [conversaData, enviando]);
-
-  // Handle loading state based on query data availability
-  useEffect(() => {
-    if (conversasList) {
-      if (conversasList.length === 0) {
-        setCarregando(false);
-      } else if (conversaId && conversaData) {
-        setCarregando(false);
-      }
-    }
-  }, [conversasList, conversaId, conversaData]);
-
-  useEffect(() => {
-    fimRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [mensagens, streamContent]);
-
-  async function enviar() {
-    if (!input.trim() || !usuario || enviando) return;
-
-    const texto = input.trim();
-    setInput('');
-    setEnviando(true);
-
-    const mensagemUsuario: Mensagem = {
-      id: crypto.randomUUID(),
-      role: 'user',
-      content: texto,
-      createdAt: new Date().toISOString(),
-    };
-    setMensagens((prev) => [...prev, mensagemUsuario]);
-
-    try {
-      let id = conversaId;
-      if (!id) {
-        const conv = await createConversation.mutateAsync({ userId: usuario.id, title: 'Dúvida - ' + texto.slice(0, 40) });
-        id = conv.id;
-        setConversaId(id);
-      }
-
-      await sendMessage.mutateAsync({ conversationId: id!, role: 'user', content: texto });
-
-      // Inicia streaming via proxy Next.js (cookie httpOnly enviado automaticamente)
-      const msgId = crypto.randomUUID();
-
-      const msgPlaceholder: Mensagem = {
-        id: msgId, role: 'assistant', content: '', createdAt: new Date().toISOString(),
-      };
-      setMensagens((prev) => [...prev, msgPlaceholder]);
-      setStreamContent('');
-
-      const response = await fetch(`/api/ai/conversations/${id}/stream`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: 'user', content: texto }),
-        credentials: 'include',
-      });
-
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error('No reader');
-
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let fullContent = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() ?? '';
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const parsed = JSON.parse(line.slice(6));
-              if (parsed.done) break;
-              if (parsed.token) {
-                fullContent += parsed.token;
-                setStreamContent(fullContent);
-              }
-            } catch {}
-          }
-        }
-      }
-
-      // After stream ends, reload conversation
-      const dados = await api.ai.obterConversa(id!);
-      const msgs = (dados.messages ?? []) as Mensagem[];
-      setMensagens(msgs);
-      setStreamContent('');
-    } catch (err) {
-      setMensagens((prev) => [
-        ...prev,
-        {
-          id: crypto.randomUUID(),
-          role: 'assistant',
-          content: 'Desculpe, não consegui processar sua pergunta. Tente novamente.',
-          createdAt: new Date().toISOString(),
-        },
-      ]);
-    } finally {
-      setEnviando(false);
-    }
-  }
+  const {
+    mensagens,
+    input,
+    setInput,
+    enviar,
+    enviando,
+    streamContent,
+    carregando,
+    fimRef,
+  } = useTutorChat({ initialValue: searchParams.get('pergunta') ?? '' });
 
   return (
     <div className="flex h-[calc(100dvh-3.5rem)] sm:h-[calc(100vh-3.5rem)] flex-col">

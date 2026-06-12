@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
+import { CONFIG } from '../common/config';
 import OpenAI from 'openai';
 import { Response } from 'express';
 
@@ -23,9 +24,6 @@ const SYSTEM_PROMPT = `Você é o Tutor IA da Isométrica, uma plataforma de ens
 - Use português claro e acessível. Evite jargão desnecessário.
 - Se o aluno estiver errado, corrija com gentileza.`;
 
-const GROQ_BASE_URL = 'https://api.groq.com/openai/v1';
-const GROQ_MODEL = 'llama-3.3-70b-versatile';
-
 @Injectable()
 export class AiService {
   private readonly logger = new Logger(AiService.name);
@@ -37,8 +35,8 @@ export class AiService {
   ) {
     const apiKey = this.configService.get<string>('GROQ_API_KEY');
     if (apiKey) {
-      this.client = new OpenAI({ apiKey, baseURL: GROQ_BASE_URL });
-      this.logger.log(`Groq client initialized (model: ${GROQ_MODEL})`);
+      this.client = new OpenAI({ apiKey, baseURL: CONFIG.groq.baseUrl });
+      this.logger.log(`Groq client initialized (model: ${CONFIG.groq.model})`);
     } else {
       this.logger.warn('GROQ_API_KEY not configured — using fallback responses');
     }
@@ -63,7 +61,7 @@ export class AiService {
     const history = await this.prisma.message.findMany({
       where: { conversationId },
       orderBy: { createdAt: 'asc' },
-      take: 20,
+      take: CONFIG.ai.maxHistoryMessages,
     });
 
     if (history.length === 0) {
@@ -75,7 +73,7 @@ export class AiService {
 
     try {
       const stream = await this.client.chat.completions.create({
-        model: GROQ_MODEL,
+        model: CONFIG.groq.model,
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
           ...history.map((m) => ({
@@ -83,7 +81,7 @@ export class AiService {
             content: m.content,
           })),
         ],
-        max_tokens: 600,
+        max_tokens: CONFIG.ai.maxTokens,
         stream: true,
       });
 

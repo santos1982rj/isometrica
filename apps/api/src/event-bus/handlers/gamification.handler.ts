@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { EventBusService } from '../event-bus.service';
 import { AppEvent, EventType } from '../interfaces/event.interface';
 import { GamificationService } from '../../gamification/gamification.service';
+import { CONFIG } from '../../common/config';
 
 @Injectable()
 export class GamificationEventHandler {
@@ -20,7 +21,7 @@ export class GamificationEventHandler {
   private async onQuestionAnswered(event: AppEvent): Promise<void> {
     const correct = event.metadata?.correct as boolean;
     if (correct) {
-      await this.gamification.addXp(event.userId, 10);
+      await this.gamification.addXp(event.userId, CONFIG.xp.question);
       this.logger.debug(`+10 XP for correct answer (user: ${event.userId})`);
     } else {
       this.logger.debug(`Incorrect answer recorded (user: ${event.userId})`);
@@ -28,7 +29,7 @@ export class GamificationEventHandler {
   }
 
   private async onLessonCompleted(event: AppEvent): Promise<void> {
-    await this.gamification.addXp(event.userId, 50);
+    await this.gamification.addXp(event.userId, CONFIG.xp.lesson);
     await this.gamification.updateStreak(event.userId);
     this.logger.debug(`+50 XP + streak for lesson (user: ${event.userId})`);
   }

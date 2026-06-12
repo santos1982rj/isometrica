@@ -1,11 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { CONFIG } from '../../common/config';
 import OpenAI from 'openai';
 import { ConfigService } from '@nestjs/config';
 import type { QuestionType, QuestionDifficulty, BloomLevel } from '../../generated/prisma/enums';
-
-const GROQ_BASE_URL = 'https://api.groq.com/openai/v1';
-const GROQ_MODEL = 'llama-3.3-70b-versatile';
 
 @Injectable()
 export class QuestionGeneratorService {
@@ -16,7 +14,7 @@ export class QuestionGeneratorService {
     configService: ConfigService,
   ) {
     const key = configService.get<string>('GROQ_API_KEY');
-    if (key) this.client = new OpenAI({ apiKey: key, baseURL: GROQ_BASE_URL });
+    if (key) this.client = new OpenAI({ apiKey: key, baseURL: CONFIG.groq.baseUrl });
   }
 
   async generateWithAI(topicId: string, count: number = 3, difficulty?: string) {
@@ -26,7 +24,7 @@ export class QuestionGeneratorService {
     if (!topic) throw new NotFoundException('Tópico não encontrado');
 
     const completion = await this.client.chat.completions.create({
-      model: GROQ_MODEL,
+      model: CONFIG.groq.model,
       messages: [{
         role: 'system',
         content: `Você é um professor de engenharia. Gere ${count} questões de múltipla escolha sobre "${topic.name}" (${topic.subject.name}). 

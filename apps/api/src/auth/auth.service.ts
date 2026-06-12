@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
+import { CONFIG } from '../common/config';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
 
@@ -20,7 +21,7 @@ export class AuthService {
       throw new ConflictException('Email já cadastrado');
     }
 
-    const senhaHash = await bcrypt.hash(dto.senha, 10);
+    const senhaHash = await bcrypt.hash(dto.senha, CONFIG.bcrypt.saltRounds);
 
     const usuario = await this.prisma.user.create({
       data: {
@@ -87,7 +88,7 @@ export class AuthService {
         throw new UnauthorizedException('Token inválido');
       }
 
-      const senhaHash = await bcrypt.hash(novaSenha, 10);
+      const senhaHash = await bcrypt.hash(novaSenha, CONFIG.bcrypt.saltRounds);
       await this.prisma.user.update({
         where: { id: payload.sub },
         data: { passwordHash: senhaHash },

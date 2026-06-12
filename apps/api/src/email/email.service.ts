@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { CONFIG } from '../common/config';
 import { Resend } from 'resend';
 
 @Injectable()
@@ -28,7 +29,7 @@ export class EmailService {
 
     try {
       const result = await this.resend.emails.send({
-        from: 'Isométrica <noreply@isometrica.eng.br>',
+        from: CONFIG.email.from,
         to: email,
         subject: 'Redefina sua senha - Isométrica',
         html: `
@@ -76,7 +77,7 @@ export class EmailService {
 
     try {
       const result = await this.resend.emails.send({
-        from: 'Isométrica <noreply@isometrica.eng.br>',
+        from: CONFIG.email.from,
         to: email,
         subject: 'Bem-vindo à Isométrica!',
         html: `

@@ -4,6 +4,7 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { validateEnv } from './env';
+import { CONFIG } from './common/config';
 import { SanitizePipe } from './common/pipes/sanitize.pipe';
 
 validateEnv();
@@ -50,7 +51,7 @@ const allowedOrigins = process.env.CORS_ORIGIN?.split(',').map(s => s.trim()) ??
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
-  const port = process.env.PORT ?? 3001;
+  const port = CONFIG.port;
   await app.listen(port);
   console.log(`API rodando em http://localhost:${port}`);
 }
