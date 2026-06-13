@@ -1,27 +1,15 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaClient } from '../generated/prisma/client';
-import type { Prisma } from '../generated/prisma/client';
-
-function buildOptions(connectionString: string) {
-  if (connectionString.includes('neon.tech') && !connectionString.includes('-pooler')) {
-    const { PrismaNeon } = require('@prisma/adapter-neon');
-    const { neonConfig } = require('@neondatabase/serverless');
-    const ws = require('ws');
-    neonConfig.webSocketConstructor = ws;
-    return { adapter: new PrismaNeon({ connectionString }) };
-  }
-  const { PrismaPg } = require('@prisma/adapter-pg');
-  const { Pool } = require('pg');
-  const pool = new Pool({ connectionString });
-  return { adapter: new PrismaPg(pool) };
-}
+import { PrismaPg } from '@prisma/adapter-pg';
+import { Pool } from 'pg';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit {
   constructor(private readonly configService: ConfigService) {
     const connectionString = configService.get<string>('DATABASE_URL')!;
-    super(buildOptions(connectionString) as Prisma.PrismaClientOptions);
+    const pool = new Pool({ connectionString });
+    super({ adapter: new PrismaPg(pool) } as any);
   }
 
   async onModuleInit() {
