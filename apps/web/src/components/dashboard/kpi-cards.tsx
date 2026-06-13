@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { Zap, Flame, Trophy, BookOpen } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Sparkline } from '@/components/dashboard/sparkline'
 
 const itemAnim = {
@@ -17,9 +18,10 @@ interface KpiCardsProps {
   streak: number
   level: number
   activeCourses: number
+  isLoading?: boolean
 }
 
-export function KpiCards({ xp, streak, level, activeCourses }: KpiCardsProps) {
+export function KpiCards({ xp, streak, level, activeCourses, isLoading }: KpiCardsProps) {
   const kpis = [
     { label: 'XP Total', value: xp.toLocaleString('pt-BR'), icon: Zap, color: 'text-isometrica-accent', bg: 'bg-isometrica-accent/10' },
     { label: 'Streak', value: `${streak} dias`, icon: Flame, color: 'text-isometrica-accent', bg: 'bg-isometrica-accent/10' },
@@ -39,7 +41,7 @@ export function KpiCards({ xp, streak, level, activeCourses }: KpiCardsProps) {
               <kpi.icon className={`size-4 ${kpi.color}`} />
             </div>
             <div className="min-w-0">
-              <p className="font-display text-lg font-bold leading-none tabular-nums">{kpi.value}</p>
+              {isLoading ? <Skeleton className="h-5 w-14 mb-1" /> : <p className="font-display text-lg font-bold leading-none tabular-nums">{kpi.value}</p>}
               <p className="mt-0.5 text-[10px] font-medium text-muted-foreground">{kpi.label}</p>
             </div>
           </div>

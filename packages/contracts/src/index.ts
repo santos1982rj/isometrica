@@ -34,6 +34,7 @@ export interface Curso {
   price?: number
   subject?: { id: string; name: string } | null
   modules?: Modulo[]
+  professor?: { id: string; name: string | null; imageUrl: string | null; title: string | null; bio: string | null } | null
   createdAt: string
 }
 

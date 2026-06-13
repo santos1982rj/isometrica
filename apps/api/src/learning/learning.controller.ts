@@ -9,7 +9,8 @@ export class LearningController {
   constructor(private readonly learningService: LearningService) {}
 
   private resolveUserId(requestedUserId: string, currentUserId: string, role?: UserRole) {
-    return role === UserRole.ADMIN || role === UserRole.PROFESSOR ? requestedUserId : currentUserId;
+    if (role === UserRole.ADMIN) return requestedUserId;
+    return currentUserId;
   }
 
   @Post('enroll')

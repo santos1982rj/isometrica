@@ -1,12 +1,26 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { UserRole } from '../../generated/prisma/enums';
 import { CreateExamDto } from '../dto/create-exam.dto';
 import { UpdateExamDto } from '../dto/update-exam.dto';
+import { EventBusService } from '../../event-bus/event-bus.service';
+import { EventType } from '../../event-bus/interfaces/event.interface';
 import type { ExamWhereInput } from '../../generated/prisma/models';
 
 @Injectable()
 export class ExamService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventBus?: EventBusService,
+  ) {}
+
+  private async assertExamOwnerOrAdmin(examId: string, userId: string, role: UserRole) {
+    const exam = await this.prisma.exam.findUnique({ where: { id: examId }, select: { createdById: true } });
+    if (!exam) throw new NotFoundException('Exame não encontrado');
+    if (role !== UserRole.ADMIN && exam.createdById !== userId) {
+      throw new ForbiddenException('Você não tem permissão para modificar este exame');
+    }
+  }
 
   private hideAnswerKey<T extends { alternatives?: Array<Record<string, unknown>>; explanation?: unknown }>(question: T): Omit<T, 'explanation'> {
     const { explanation: _explanation, ...safeQuestion } = question;
@@ -60,11 +74,12 @@ export class ExamService {
     };
   }
 
-  async createExam(dto: CreateExamDto) {
+  async createExam(dto: CreateExamDto, userId?: string) {
     const { questionIds, ...data } = dto;
     return this.prisma.exam.create({
       data: {
         ...data,
+        createdById: userId,
         ...(questionIds?.length ? { questions: { connect: questionIds.map(id => ({ id })) } } : {}),
       },
       include: { _count: { select: { questions: true } } },
@@ -85,10 +100,9 @@ export class ExamService {
     return { ...exam, questions: exam.questions.map((question) => this.hideAnswerKey(question)) };
   }
 
-  async updateExam(id: string, dto: UpdateExamDto) {
+  async updateExam(id: string, dto: UpdateExamDto, userId: string, role: UserRole) {
+    await this.assertExamOwnerOrAdmin(id, userId, role);
     const { questionIds, ...data } = dto;
-    const exam = await this.prisma.exam.findUnique({ where: { id } });
-    if (!exam) throw new NotFoundException('Exame não encontrado');
 
     return this.prisma.exam.update({
       where: { id },
@@ -102,9 +116,8 @@ export class ExamService {
     });
   }
 
-  async deleteExam(id: string) {
-    const exam = await this.prisma.exam.findUnique({ where: { id } });
-    if (!exam) throw new NotFoundException('Exame não encontrado');
+  async deleteExam(id: string, userId: string, role: UserRole) {
+    await this.assertExamOwnerOrAdmin(id, userId, role);
     // Desassociate questions first
     await this.prisma.exam.update({
       where: { id },
@@ -138,6 +151,35 @@ export class ExamService {
   }
 
   async startSimulado(userId: string, examId: string) {
+    // Check for existing in-progress session
+    const existing = await this.prisma.simuladoSession.findFirst({
+      where: { userId, examId, status: 'em_andamento' },
+      include: {
+        exam: { select: { id: true, name: true, timeLimit: true } },
+        answers: {
+          include: { question: { include: { alternatives: true } } },
+        },
+      },
+    });
+
+    if (existing) {
+      return {
+        sessionId: existing.id,
+        exam: { id: existing.exam.id, name: existing.exam.name, timeLimit: existing.exam.timeLimit },
+        totalQuestions: existing.totalQuestions,
+        questions: existing.answers.map(a => ({
+          questionId: a.questionId,
+          text: a.question.text,
+          difficulty: a.question.difficulty,
+          topic: a.question.topicId,
+          alternatives: a.question.alternatives.map(alt => ({ id: alt.id, text: alt.text })),
+          selectedId: a.selectedId,
+        })),
+        startedAt: existing.startedAt,
+        resumed: true,
+      };
+    }
+
     const exam = await this.prisma.exam.findUnique({
       where: { id: examId },
       include: {
@@ -175,6 +217,7 @@ export class ExamService {
         alternatives: q.alternatives.map(alt => ({ id: alt.id, text: alt.text })),
       })),
       startedAt: session.startedAt,
+      resumed: false,
     };
   }
 
@@ -185,6 +228,15 @@ export class ExamService {
     if (!session) throw new NotFoundException('Sessão não encontrada');
     if (session.userId !== userId) throw new NotFoundException();
     if (session.status !== 'em_andamento') throw new BadRequestException('Simulado já finalizado');
+
+    // Check exam time limit
+    const exam = await this.prisma.exam.findUnique({ where: { id: session.examId }, select: { timeLimit: true } });
+    if (exam?.timeLimit) {
+      const elapsed = Date.now() - session.startedAt.getTime();
+      if (elapsed > exam.timeLimit * 60 * 1000) {
+        throw new BadRequestException('Tempo limite do simulado expirado');
+      }
+    }
 
     const allAnswers = await this.prisma.simuladoAnswer.findMany({
       where: { sessionId },
@@ -213,6 +265,15 @@ export class ExamService {
       where: { id: sessionId },
       data: { status: 'concluido', score, totalCorrect: correct, finishedAt: new Date() },
     });
+
+    if (this.eventBus) {
+      await this.eventBus.publish({
+        type: EventType.SIMULADO_FINISHED,
+        userId,
+        timestamp: new Date(),
+        metadata: { sessionId, examId: session.examId, score, correct, totalQuestions },
+      });
+    }
 
     return this.getSimuladoResult(sessionId);
   }

@@ -1,18 +1,30 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { UserRole } from '../generated/prisma/enums';
 
 @Injectable()
 export class CoursesService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private professorSelect = { id: true, name: true, imageUrl: true, title: true, bio: true };
+
+  private async assertCourseOwnerOrAdmin(courseId: string, userId: string, role: UserRole) {
+    const course = await this.prisma.course.findUnique({ where: { id: courseId }, select: { professorId: true, subjectId: true } });
+    if (!course) throw new NotFoundException('Curso não encontrado');
+    if (role !== UserRole.ADMIN && course.professorId !== userId) {
+      throw new ForbiddenException('Você não tem permissão para modificar este curso');
+    }
+    return course;
+  }
+
   findAll() {
-    return this.prisma.course.findMany({ include: { subject: true, modules: true, professor: true } });
+    return this.prisma.course.findMany({ include: { subject: true, modules: true, professor: { select: this.professorSelect } } });
   }
 
   findById(id: string) {
     return this.prisma.course.findUnique({
       where: { id },
-      include: { subject: true, professor: true, modules: { include: { lessons: { orderBy: { order: 'asc' } } } } },
+      include: { subject: true, professor: { select: this.professorSelect }, modules: { include: { lessons: { orderBy: { order: 'asc' } } } } },
     });
   }
 
@@ -37,15 +49,14 @@ export class CoursesService {
         subjectId: subjectId,
         professorId,
       },
-      include: { subject: true, professor: true },
+      include: { subject: true, professor: { select: this.professorSelect } },
     });
   }
 
-  async update(id: string, data: { name?: string; description?: string; imageUrl?: string; category?: string }) {
-    const course = await this.prisma.course.findUnique({ where: { id } });
-    if (!course) throw new NotFoundException('Curso não encontrado');
+  async update(data: { name?: string; description?: string; imageUrl?: string; category?: string }, id: string, userId: string, role: UserRole) {
+    const course = await this.assertCourseOwnerOrAdmin(id, userId, role);
 
-    let subjectId = course.subjectId;
+    let subjectId = course.subjectId as string | undefined;
     if (data.category) {
       const subject = await this.prisma.subject.upsert({
         where: { name: data.category },
@@ -58,13 +69,12 @@ export class CoursesService {
     return this.prisma.course.update({
       where: { id },
       data: { ...data, subjectId },
-      include: { subject: true, professor: true, modules: { include: { lessons: { orderBy: { order: 'asc' } } } } },
+      include: { subject: true, professor: { select: this.professorSelect }, modules: { include: { lessons: { orderBy: { order: 'asc' } } } } },
     });
   }
 
-  async remove(id: string) {
-    const course = await this.prisma.course.findUnique({ where: { id } });
-    if (!course) throw new NotFoundException('Curso não encontrado');
+  async remove(id: string, userId: string, role: UserRole) {
+    await this.assertCourseOwnerOrAdmin(id, userId, role);
     await this.prisma.course.delete({ where: { id } });
     return { message: 'Curso removido' };
   }

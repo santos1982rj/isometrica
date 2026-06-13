@@ -61,7 +61,7 @@ export default function PerfilPublicoPage(props: { params: Promise<{ id: string 
                 <div className="mt-4 flex items-center justify-center gap-2 flex-wrap">
                   {user.lattes && <a href={user.lattes} target="_blank" className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-xs text-white/80 hover:bg-white/20 transition-colors">Lattes <ExternalLink className="size-3" /></a>}
                   {user.linkedin && <a href={user.linkedin} target="_blank" className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-xs text-white/80 hover:bg-white/20 transition-colors">LinkedIn <ExternalLink className="size-3" /></a>}
-                  {user.instagram && <a href={user.instagram} target="_blank" className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-xs text-white/80 hover:bg-white/20 transition-colors">Instagram <ExternalLink className="size-3" /></a>}
+                  {user.instagram && <a href={user.instagram.startsWith('http') ? user.instagram : `https://instagram.com/${user.instagram.replace(/^@/, '')}`} target="_blank" className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-xs text-white/80 hover:bg-white/20 transition-colors">Instagram <ExternalLink className="size-3" /></a>}
                 </div>
               )}
             </div>

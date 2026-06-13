@@ -19,7 +19,7 @@ interface StreakCardsProps {
 export function StreakCards({ streak, achievements, missions, totalAchievements, totalMissions }: StreakCardsProps) {
   return (
     <motion.div variants={itemAnim} className="lg:col-span-2">
-      <div className="grid h-full grid-cols-3 gap-4">
+      <div className="grid h-full grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bento-card flex flex-col items-center justify-center rounded-xl border border-border bg-card p-5 text-center">
           <div className="mb-2 flex size-11 items-center justify-center rounded-xl bg-isometrica-accent/10">
             <Flame className="size-5 text-isometrica-accent" />

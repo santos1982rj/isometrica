@@ -30,8 +30,8 @@ export class CoursesController {
 
   @Put(':id')
   @Roles(UserRole.PROFESSOR, UserRole.ADMIN)
-  update(@Param('id') id: string, @Body() dto: UpdateCourseDto) {
-    return this.coursesService.update(id, dto);
+  update(@Param('id') id: string, @Body() dto: UpdateCourseDto, @CurrentUser('id') userId: string, @CurrentUser('papel') role: UserRole) {
+    return this.coursesService.update(dto, id, userId, role);
   }
 
   @Get('search/:q')
@@ -46,9 +46,9 @@ export class CoursesController {
   }
 
   @Delete(':id')
-  @Roles(UserRole.ADMIN)
-  remove(@Param('id') id: string) {
-    return this.coursesService.remove(id);
+  @Roles(UserRole.PROFESSOR, UserRole.ADMIN)
+  remove(@Param('id') id: string, @CurrentUser('id') userId: string, @CurrentUser('papel') role: UserRole) {
+    return this.coursesService.remove(id, userId, role);
   }
 
   @Post(':id/purchase')

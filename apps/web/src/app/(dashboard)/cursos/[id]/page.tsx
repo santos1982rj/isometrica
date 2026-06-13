@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
 import { useAuth } from '@/contexts/auth-context'
-import { ChevronRight, BookOpen, AlignLeft, Link2, Briefcase } from 'lucide-react'
+import { ChevronRight, BookOpen, AlignLeft } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   useCourse, useCourseAccess, useCourseProgress, useEnroll, usePurchase, useGenerateCertificate,
@@ -68,7 +68,7 @@ export default function CursoDetalhePage(props: { params: Promise<{ id: string }
   if (isLoading) return (
     <div className="mx-auto max-w-6xl space-y-5 p-5">
       <div className="h-52 animate-pulse rounded-2xl bg-muted" />
-      <div className="grid gap-8 lg:grid-cols-3">
+      <div className="grid gap-8 sm:grid-cols-1 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-4">
           {[1, 2, 3, 4].map(i => <div key={i} className="h-16 animate-pulse rounded-xl bg-muted" />)}
         </div>
@@ -92,6 +92,7 @@ export default function CursoDetalhePage(props: { params: Promise<{ id: string }
   const grad = curso.color ?? 'from-violet-600 to-purple-700'
   const precisaCompra = !!(acessoInfo?.needsPurchase && !temAcesso)
   const firstLessonId = curso.modules?.[0]?.lessons?.[0]?.id ?? '#'
+  const semAulas = firstLessonId === '#'
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mx-auto max-w-6xl space-y-8 px-4 lg:px-0 pb-12">
@@ -116,7 +117,7 @@ export default function CursoDetalhePage(props: { params: Promise<{ id: string }
       />
 
       {/* Grid principal */}
-      <div className="grid gap-8 lg:grid-cols-3">
+      <div className="grid gap-8 sm:grid-cols-1 lg:grid-cols-3">
         {/* Coluna principal */}
         <div className="lg:col-span-2 space-y-6">
           {/* Ementa */}
@@ -141,6 +142,7 @@ export default function CursoDetalhePage(props: { params: Promise<{ id: string }
             isPremium={!!curso.premium}
             certificateEnabled={!!curso.certificateEnabled}
             temAcesso={temAcesso}
+            semAulas={semAulas}
             needsPurchase={precisaCompra}
             price={acessoInfo?.price ?? 0}
             totalLessons={totalAulas}
@@ -162,20 +164,22 @@ export default function CursoDetalhePage(props: { params: Promise<{ id: string }
           {/* Card Professor */}
           <div className="rounded-xl border border-border bg-card p-4">
             <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Ministrado por</h4>
-            <div className="flex items-center gap-3">
-              <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-isometrica-accent to-orange-400 text-base font-bold text-white shadow-sm">
-                P
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold leading-tight">Prof. Carlos Mendes</p>
-                <p className="text-xs text-muted-foreground">Doutor em Engenharia Civil</p>
-                <p className="text-[10px] text-muted-foreground/70">{curso.subject?.name ?? 'Engenharia'}</p>
-                <div className="mt-1.5 flex items-center gap-2">
-                  <a href="#" className="inline-flex items-center gap-1 text-[10px] text-isometrica-accent hover:underline"><Link2 className="size-3" /> Lattes</a>
-                  <a href="#" className="inline-flex items-center gap-1 text-[10px] text-isometrica-accent hover:underline"><Briefcase className="size-3" /> LinkedIn</a>
+            {curso.professor ? (
+              <div className="flex items-center gap-3">
+                <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-isometrica-accent to-orange-400 text-base font-bold text-white shadow-sm">
+                  {curso.professor.name?.[0] ?? '?'}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold leading-tight">{curso.professor.name ?? 'Professor'}</p>
+                  {curso.professor.title && (
+                    <p className="text-xs text-muted-foreground">{curso.professor.title}</p>
+                  )}
+                  <p className="text-[10px] text-muted-foreground/70">{curso.subject?.name ?? 'Engenharia'}</p>
                 </div>
               </div>
-            </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">Nenhum professor vinculado</p>
+            )}
           </div>
 
           {/* Informações */}

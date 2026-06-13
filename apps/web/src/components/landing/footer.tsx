@@ -30,7 +30,7 @@ export function Footer() {
           <div>
             <h4 className="mb-3 text-sm font-semibold">Empresa</h4>
             <div className="flex flex-col gap-2">
-              <Link href="#contact" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Contato</Link>
+              <span className="text-sm text-muted-foreground">Contato</span>
               <span className="text-sm text-muted-foreground">Sobre</span>
               <span className="text-sm text-muted-foreground">Termos</span>
             </div>

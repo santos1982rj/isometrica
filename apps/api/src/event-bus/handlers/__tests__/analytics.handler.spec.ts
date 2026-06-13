@@ -41,7 +41,7 @@ describe('AnalyticsEventHandler', () => {
     });
 
     it('should skip unmapped event types', async () => {
-      const event: AppEvent = { type: EventType.XP_GAINED, userId: 'user-1', timestamp: new Date() };
+      const event: AppEvent = { type: EventType.SIMULADO_FINISHED, userId: 'user-1', timestamp: new Date() };
 
       await (handler as any).handle(event);
 

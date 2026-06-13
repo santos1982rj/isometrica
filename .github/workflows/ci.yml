@@ -39,11 +39,74 @@ jobs:
       - name: TypeScript check
         run: pnpm turbo typecheck
 
-      - name: Lint
-        run: pnpm lint
+      - name: Lint (API)
+        run: pnpm --filter @isometrica/api lint
 
       - name: Build
         run: pnpm build
 
       - name: Test
         run: pnpm test
+
+  e2e:
+    runs-on: ubuntu-latest
+    if: false
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: isometrica
+          POSTGRES_PASSWORD: isometrica
+          POSTGRES_DB: isometrica
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready -U isometrica
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.14
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Prisma generate + migrate + seed
+        run: |
+          pnpm --filter @isometrica/api exec prisma generate
+          pnpm --filter @isometrica/api exec prisma migrate deploy
+          pnpm --filter @isometrica/api seed
+        env:
+          DATABASE_URL: "postgresql://isometrica:isometrica@localhost:5432/isometrica"
+          JWT_SECRET: ci-test-secret
+          NODE_ENV: development
+
+      - name: Install Playwright browsers
+        run: pnpm --filter @isometrica/web exec playwright install chromium
+
+      - name: Start API
+        run: |
+          pnpm --filter @isometrica/api start &
+          sleep 3
+        env:
+          DATABASE_URL: "postgresql://isometrica:isometrica@localhost:5432/isometrica"
+          JWT_SECRET: ci-test-secret
+          GROQ_API_KEY: ""
+          REDIS_URL: ""
+          PORT: "3001"
+          NODE_ENV: development
+
+      - name: Run E2E tests
+        run: pnpm --filter @isometrica/web test:e2e
+        env:
+          API_BACKEND_URL: "http://localhost:3001"
+          NEXT_PUBLIC_API_URL: "http://localhost:3001/api"

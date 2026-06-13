@@ -115,6 +115,7 @@ export default function ConcursoPage() {
           {exams.map((exam: ExamListItem) => (
             <motion.div key={exam.id} variants={itemAnim}>
               <Card
+                data-testid={`simulado-card-${exam.id}`}
                 className="cursor-pointer transition-all hover:border-isometrica-accent/30 hover:shadow-sm"
                 onClick={() => handleStart(exam.id)}
               >

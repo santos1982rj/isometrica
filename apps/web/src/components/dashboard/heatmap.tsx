@@ -32,6 +32,23 @@ export function Heatmap({ data, days }: HeatmapProps) {
     return 4
   }
 
+  if (data.length === 0) {
+    return (
+      <div>
+        <p className="py-3 text-center text-[11px] text-muted-foreground">Nenhuma atividade registrada</p>
+        <div className="mt-2 flex items-center justify-between">
+          <span className="text-[8.5px] font-medium text-muted-foreground">Menos</span>
+          <div className="flex items-center gap-[2px]">
+            {levels.map((l, i) => (
+              <div key={i} className={`size-[8px] rounded-[2px] ${l}`} />
+            ))}
+          </div>
+          <span className="text-[8.5px] font-medium text-muted-foreground">Mais</span>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div>
       <div className="flex gap-[3px]">

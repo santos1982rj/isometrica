@@ -13,12 +13,6 @@ import { IaSuggestions } from '@/components/dashboard/ia-suggestions'
 import { DiagnosticoGeral } from '@/components/dashboard/diagnostico-geral'
 import { ActivityTimeline } from '@/components/dashboard/activity-timeline'
 import { CtaBanner } from '@/components/dashboard/cta-banner'
-import {
-  AlertTriangle,
-  CheckCircle,
-  Star,
-} from 'lucide-react'
-
 interface ProficienciaItem {
   proficiency: number
   topic?: {
@@ -42,14 +36,6 @@ const itemAnim = {
   hidden: { opacity: 0, y: 16 },
   show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] as const } },
 }
-
-const mockRecommendations = [
-  { icon: AlertTriangle, emojiBg: 'bg-isometrica-accent/10', title: 'Concreto Armado crítico', desc: '70% de erro em Lajes. Revisar conteúdo.', meta: 'Últimas 15 tentativas', action: 'Revisar' },
-  { icon: CheckCircle, emojiBg: 'bg-isometrica-success/10', title: 'Cálculo III em alta', desc: '+23% esta semana em Derivadas Parciais.', meta: '12 acertos consecutivos', action: 'Praticar' },
-  { icon: Star, emojiBg: 'bg-isometrica-warning/10', title: 'Missão: Canteiro de Obras', desc: '10 questões = 200 XP extras.', meta: 'Expira em 2 dias', action: 'Aceitar' },
-]
-
-const heatmapData = Array.from({ length: 30 }, () => Math.floor(Math.random() * 15))
 
 const periodoOptions = ['Semana', 'Mês', 'Semestre']
 
@@ -96,16 +82,17 @@ export default function DashboardPage() {
             </span>
           </p>
         </div>
-        <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-0.5">
+        {/* Filtro de período — para uso futuro (heatmap) */}
+        <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-0.5 pointer-events-none opacity-50">
           {periodoOptions.map((opt) => (
-            <button
+            <span
               key={opt}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
-                opt === 'Semana' ? 'bg-isometrica-accent text-white' : 'text-muted-foreground hover:text-foreground'
+              className={`rounded-md px-3 py-1.5 text-xs font-medium ${
+                opt === 'Semana' ? 'bg-isometrica-accent text-white' : 'text-muted-foreground'
               }`}
             >
               {opt}
-            </button>
+            </span>
           ))}
         </div>
       </motion.div>
@@ -115,12 +102,14 @@ export default function DashboardPage() {
         streak={gamification?.streak ?? 0}
         level={gamification?.level ?? 0}
         activeCourses={profileData?.enrollments?.length ?? 0}
+        isLoading={loading}
       />
 
-      <div className="grid gap-5 lg:grid-cols-4">
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         <ContinueStudying nextLessons={nextLessons} />
 
-        <IaSuggestions recommendations={mockRecommendations} />
+        <IaSuggestions recommendations={[]} />
+          {/* TODO: Integrar useRecommendations quando hook disponível — atualmente vazio por design */}
       </div>
 
       <div className="grid gap-5 lg:grid-cols-4">
@@ -137,7 +126,7 @@ export default function DashboardPage() {
               <h3 className="text-sm font-semibold">Últimos 30 Dias</h3>
             </div>
           </div>
-          <Heatmap data={heatmapData} />
+          <Heatmap data={[]} />
         </motion.div>
       </div>
 

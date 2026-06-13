@@ -69,7 +69,7 @@ export default function AdminDashboardPage() {
         <h1 className="font-display text-2xl font-bold">
           Admin Dashboard
         </h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">Visão geral da plataforma</p>
+        <p className="mt-0.5 text-sm text-muted-foreground">Visão geral da plataforma — em preparação para o beta</p>
       </motion.div>
 
       <motion.div variants={item} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -92,7 +92,7 @@ export default function AdminDashboardPage() {
         ))}
       </motion.div>
 
-      <div className="grid gap-5 lg:grid-cols-3">
+      <div className="grid gap-5 sm:grid-cols-1 lg:grid-cols-3">
         <motion.div variants={item} className="bento-card rounded-xl border border-border bg-card p-5 lg:col-span-2">
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -145,7 +145,7 @@ export default function AdminDashboardPage() {
         </motion.div>
       </div>
 
-      <motion.div variants={item} className="grid gap-5 lg:grid-cols-2">
+      <motion.div variants={item} className="grid gap-5 sm:grid-cols-1 lg:grid-cols-2">
         <div className="bento-card rounded-xl border border-border bg-card p-5">
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2">

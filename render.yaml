@@ -4,10 +4,21 @@ services:
     env: node
     buildCommand: pnpm install && pnpm build --filter @isometrica/api
     startCommand: node apps/api/dist/main
+    postDeployCommand: pnpm --filter @isometrica/api exec prisma migrate deploy
     envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: NODE_ENV
+        value: production
       - key: DATABASE_URL
         sync: false
       - key: JWT_SECRET
         sync: false
-      - key: NODE_VERSION
-        value: 22
+      - key: CORS_ORIGIN
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false

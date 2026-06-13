@@ -2,25 +2,8 @@
 
 import { motion } from 'framer-motion'
 import { useAuth } from '@/contexts/auth-context'
-import { useGamification } from '@/lib/queries'
-import type { Conquista, Missao } from '@/lib/types'
-import {
-  Flame,
-  Trophy,
-  Target,
-  Zap,
-  Crown,
-  BookOpen,
-  Brain,
-  Clock,
-  PersonStanding,
-  Moon,
-  Ruler,
-  Lightbulb,
-  Building,
-  TriangleAlert,
-  RefreshCw,
-} from 'lucide-react'
+import { useGamification, useLeaderboard, useXpHistory } from '@/lib/queries'
+import { TrendingUp, Star, Flame, Trophy, Crown, CheckCircle, Play, FileCheck, Target, type LucideIcon } from 'lucide-react'
 import { StreakCards } from '@/components/gamificacao/streak-cards'
 import { NarrativeCard } from '@/components/gamificacao/narrative-card'
 import { AchievementsGrid } from '@/components/gamificacao/achievements-grid'
@@ -38,44 +21,6 @@ const itemAnim = {
   show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] as const } },
 }
 
-const achievementsList = [
-  { name: 'Primeiro Passo', desc: 'Complete sua primeira aula', icon: Target, unlocked: true },
-  { name: 'Três dias seguidos', desc: 'Estude por 3 dias consecutivos', icon: Flame, unlocked: true },
-  { name: 'Maratonista', desc: '7 dias consecutivos de estudo', icon: PersonStanding, unlocked: true },
-  { name: 'Mestre das Questões', desc: 'Responda 100 questões', icon: BookOpen, unlocked: false, progress: 67, target: 100 },
-  { name: 'Lenda', desc: '30 dias consecutivos', icon: Crown, unlocked: false, progress: 7, target: 30 },
-  { name: 'Colecionador', desc: 'Desbloqueie 10 conquistas', icon: Trophy, unlocked: false, progress: 3, target: 10 },
-  { name: 'Calculista', desc: '100% em Cálculo III', icon: Ruler, unlocked: false, progress: 82, target: 100 },
-  { name: 'Engenheiro Noturno', desc: 'Estude após as 22h por 5 dias', icon: Moon, unlocked: false, progress: 2, target: 5 },
-  { name: 'Velocista', desc: 'Responda 10 questões em 5 minutos', icon: Zap, unlocked: false, progress: 6, target: 10 },
-  { name: 'Mentor', desc: 'Ajude 3 colegas no tutor IA', icon: Lightbulb, unlocked: false, progress: 1, target: 3 },
-  { name: 'Dedicação Total', desc: 'Complete 50 aulas', icon: BookOpen, unlocked: false, progress: 18, target: 50 },
-  { name: 'Construtor', desc: 'Finalize um curso completo', icon: Building, unlocked: false, progress: 1, target: 4 },
-]
-
-const mockMissions = [
-  { name: 'Canteiro de Obras', desc: 'Responda 10 questões de Resistência dos Materiais', icon: TriangleAlert, progress: 8, target: 10, xpReward: 200 },
-  { name: 'Mestre das Fórmulas', desc: 'Complete 4 aulas de Cálculo III', icon: Ruler, progress: 3, target: 4, xpReward: 150 },
-  { name: 'Desafio Diário', desc: 'Estude por 30 minutos hoje', icon: Clock, progress: 22, target: 30, xpReward: 50 },
-  { name: 'Revisão Geral', desc: 'Acerte 5 questões seguidas de Concreto Armado', icon: RefreshCw, progress: 3, target: 5, xpReward: 100 },
-]
-
-const xpHistory = [
-  { action: 'Aula concluída: Diagrama de Momento Fletor', xp: 50, time: 'Há 2 horas', icon: BookOpen },
-  { action: 'Acertou questão de Derivadas Parciais', xp: 10, time: 'Há 3 horas', icon: Brain },
-  { action: 'Acertou questão de Tensão Normal', xp: 10, time: 'Há 4 horas', icon: Brain },
-  { action: 'Streak atualizado: 7 dias', xp: 0, time: 'Há 5 horas', icon: Flame },
-  { action: 'Aula concluída: Propriedades do Concreto', xp: 50, time: 'Ontem', icon: BookOpen },
-]
-
-const rankingData = [
-  { pos: 1, name: 'Ana Oliveira', xp: 8450, level: 15 },
-  { pos: 2, name: 'Carlos Mendes', xp: 6720, level: 13 },
-  { pos: 3, name: 'Você', xp: 2450, level: 8, isMe: true },
-  { pos: 4, name: 'Lucas Silva', xp: 2100, level: 7 },
-  { pos: 5, name: 'Maria Costa', xp: 1890, level: 6 },
-]
-
 function getLevelColor(level: number) {
   if (level >= 20) return 'from-purple-500 to-pink-500'
   if (level >= 10) return 'from-isometrica-accent to-orange-400'
@@ -86,16 +31,121 @@ function getLevelColor(level: number) {
 export default function GamificacaoPage() {
   const { usuario } = useAuth()
   const { data: profileData, isLoading: carregando } = useGamification(usuario?.id ?? '')
+  const { data: leaderboard = [] } = useLeaderboard()
+  const { data: xpHistoryData = [] } = useXpHistory(usuario?.id ?? '')
 
-  const xp = profileData?.xp ?? 2450
-  const level = profileData?.level ?? 8
-  const streak = profileData?.streak ?? 7
-  const achievements: { name: string }[] = profileData?.achievements ?? achievementsList.filter(a => a.unlocked)
-  const missions: { progress: number; target: number }[] = profileData?.missions ?? mockMissions
+  const xp = profileData?.xp ?? 0
+  const level = profileData?.level ?? 0
+  const streak = profileData?.streak ?? 0
+  const achievementsCount = profileData?.achievements?.length ?? 0
+  const completedMissions = (profileData?.missions ?? []).filter((m) => m.progress >= m.target).length
+  const totalMissions = profileData?.missions?.length ?? 0
 
-  const nextLevelXp = 100 * level * (level + 1) / 2
-  const currentLevelXp = 100 * (level - 1) * level / 2
-  const xpProgress = ((xp - currentLevelXp) / (nextLevelXp - currentLevelXp)) * 100
+  const nextLevelXp = level > 0 ? 100 * level * (level + 1) / 2 : 100
+  const currentLevelXp = level > 1 ? 100 * (level - 1) * level / 2 : 0
+  const xpProgress = nextLevelXp > currentLevelXp ? ((xp - currentLevelXp) / (nextLevelXp - currentLevelXp)) * 100 : 0
+
+  const rankingData = leaderboard.map((entry, i) => ({
+    pos: i + 1,
+    name: entry.name ?? 'Anônimo',
+    level: entry.level,
+    xp: entry.xp,
+    isMe: entry.userId === usuario?.id,
+  }))
+
+  const iconMap: Record<string, LucideIcon> = {
+    Star, Flame, Trophy, Crown, CheckCircle, Play, FileCheck, TrendingUp,
+  }
+
+  const xpHistoryItems = xpHistoryData.map((entry) => ({
+    icon: TrendingUp,
+    action: entry.action,
+    time: new Date(entry.date).toLocaleDateString('pt-BR'),
+    xp: entry.xp,
+  }))
+
+  const achievements = (profileData?.achievements ?? []).map((a) => ({
+    name: a.name,
+    desc: a.description ?? '',
+    icon: iconMap[a.icon as string] ?? Star,
+    unlocked: true,
+  }))
+
+  const missions = (profileData?.missions ?? []).map((m) => ({
+    name: m.name,
+    desc: m.description ?? '',
+    icon: Target,
+    progress: m.progress,
+    target: m.target,
+    xpReward: 50,
+  }))
+
+  if (carregando) {
+    return (
+      <motion.div variants={container} initial="hidden" animate="show" className="space-y-5">
+        <motion.div variants={itemAnim}>
+          <h1 className="font-display text-2xl font-bold">Gamificação</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">Acompanhe suas conquistas, missões e progresso</p>
+        </motion.div>
+
+        <div className="grid gap-5 sm:grid-cols-1 lg:grid-cols-3">
+          <div className="bento-card rounded-xl border border-border bg-card p-6 lg:col-span-1 animate-pulse">
+            <div className="mx-auto mb-3 size-20 rounded-2xl bg-muted" />
+            <div className="mx-auto h-6 w-24 rounded bg-muted" />
+            <div className="mx-auto mt-1 h-4 w-16 rounded bg-muted" />
+            <div className="mt-4 space-y-2">
+              <div className="h-12 rounded-lg bg-muted" />
+              <div className="h-2.5 rounded-full bg-muted" />
+            </div>
+          </div>
+          <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bento-card rounded-xl border border-border bg-card p-5 animate-pulse">
+                <div className="mx-auto mb-3 size-10 rounded-xl bg-muted" />
+                <div className="mx-auto h-6 w-16 rounded bg-muted" />
+                <div className="mx-auto mt-1 h-3 w-20 rounded bg-muted" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="bento-card rounded-xl border border-border bg-card p-5 animate-pulse">
+          <div className="flex items-center gap-3">
+            <div className="size-10 rounded-xl bg-muted" />
+            <div className="flex-1 space-y-2">
+              <div className="h-4 w-1/3 rounded bg-muted" />
+              <div className="h-3 w-1/2 rounded bg-muted" />
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-5 sm:grid-cols-1 lg:grid-cols-3">
+          <div className="lg:col-span-2 bento-card rounded-xl border border-border bg-card p-5 animate-pulse space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center gap-3">
+                <div className="size-8 rounded-lg bg-muted" />
+                <div className="flex-1 space-y-1.5">
+                  <div className="h-4 w-2/3 rounded bg-muted" />
+                  <div className="h-3 w-1/3 rounded bg-muted" />
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="bento-card rounded-xl border border-border bg-card p-5 animate-pulse space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center gap-3">
+                <div className="size-8 rounded-full bg-muted" />
+                <div className="flex-1 space-y-1.5">
+                  <div className="h-4 w-2/3 rounded bg-muted" />
+                  <div className="h-3 w-1/3 rounded bg-muted" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </motion.div>
+    )
+  }
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-5">
@@ -104,7 +154,7 @@ export default function GamificacaoPage() {
         <p className="mt-0.5 text-sm text-muted-foreground">Acompanhe suas conquistas, missões e progresso</p>
       </motion.div>
 
-      <div className="grid gap-5 lg:grid-cols-3">
+      <div className="grid gap-5 sm:grid-cols-1 lg:grid-cols-3">
         <motion.div variants={itemAnim} className="bento-card relative overflow-hidden rounded-xl border border-border bg-card p-6 lg:col-span-1">
           <div className={`absolute inset-0 bg-gradient-to-br ${getLevelColor(level)} opacity-5`} />
           <div className="relative z-10 text-center">
@@ -129,7 +179,7 @@ export default function GamificacaoPage() {
                 />
               </div>
               <p className="text-[10px] text-muted-foreground">
-                {Math.round(nextLevelXp - xp).toLocaleString()} XP para o próximo nível
+                {Math.round(Math.max(nextLevelXp - xp, 0)).toLocaleString()} XP para o próximo nível
               </p>
             </div>
           </div>
@@ -137,22 +187,22 @@ export default function GamificacaoPage() {
 
         <StreakCards
           streak={streak}
-          achievements={achievements.length}
-          missions={missions.filter((m) => m.progress >= m.target).length}
-          totalAchievements={achievementsList.length}
-          totalMissions={missions.length}
+          achievements={achievementsCount}
+          missions={completedMissions}
+          totalAchievements={achievementsCount}
+          totalMissions={totalMissions}
         />
       </div>
 
       <NarrativeCard streak={streak} level={level} />
 
-      <div className="grid gap-5 lg:grid-cols-3">
-        <AchievementsGrid achievements={achievementsList} unlockedAchievements={achievements} />
-        <MissionsList missions={mockMissions} />
+      <div className="grid gap-5 sm:grid-cols-1 lg:grid-cols-3">
+        <AchievementsGrid achievements={achievements} unlockedAchievements={profileData?.achievements ?? []} />
+        <MissionsList missions={missions} />
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-3">
-        <XpTimeline xpHistory={xpHistory} />
+      <div className="grid gap-5 sm:grid-cols-1 lg:grid-cols-3">
+        <XpTimeline xpHistory={xpHistoryItems} />
         <RankingList ranking={rankingData} />
       </div>
     </motion.div>

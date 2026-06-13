@@ -76,7 +76,7 @@ export default function ProfessorDashboardPage() {
         ))}
       </motion.div>
 
-      <div className="grid gap-5 lg:grid-cols-3">
+      <div className="grid gap-5 sm:grid-cols-1 lg:grid-cols-3">
         <motion.div variants={item} className="bento-card rounded-xl border border-border bg-card p-5 lg:col-span-2">
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2">

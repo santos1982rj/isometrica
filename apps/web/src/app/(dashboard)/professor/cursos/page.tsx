@@ -1,10 +1,20 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
 import { useCourses, useDeleteCourse } from '@/lib/queries'
 import { Plus, BookOpen, FileText, Users, Edit, Trash2, ChevronRight, GraduationCap, AlertCircle } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel,
+} from '@/components/ui/alert-dialog'
 
 const container = {
   hidden: {},
@@ -26,14 +36,20 @@ const gradients = [
 export default function ProfessorCursosPage() {
   const { data: cursos = [], isLoading } = useCourses()
   const deleteMutation = useDeleteCourse()
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null)
+  const [confirmNome, setConfirmNome] = useState('')
 
-  async function remover(id: string, nome: string) {
-    if (!confirm(`Remover "${nome}"? Esta ação não pode ser desfeita.`)) return
-    try {
-      await deleteMutation.mutateAsync(id)
-    } catch {
-      toast.error('Erro ao remover curso')
-    }
+  function remover(id: string, nome: string) {
+    setConfirmNome(nome)
+    setPendingAction(() => async () => {
+      try {
+        await deleteMutation.mutateAsync(id)
+      } catch {
+        toast.error('Erro ao remover curso')
+      }
+    })
+    setConfirmOpen(true)
   }
 
   return (
@@ -121,6 +137,18 @@ export default function ProfessorCursosPage() {
           })}
         </motion.div>
       )}
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover curso</AlertDialogTitle>
+            <AlertDialogDescription>Remover "{confirmNome}"? Esta ação não pode ser desfeita. Todas as aulas, módulos e dados associados serão removidos permanentemente.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setConfirmOpen(false)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={() => { pendingAction?.(); setConfirmOpen(false) }}>Remover</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   )
 }

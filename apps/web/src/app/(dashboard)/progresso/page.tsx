@@ -4,6 +4,7 @@ import { useLearningModel, useDiagnostics } from '@/lib/queries';
 import { useAuth } from '@/contexts/auth-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 
 function BarraProficiencia({ label, valor, cor }: { label: string; valor: number; cor: string }) {
   const pct = Math.round(valor * 100);
@@ -60,7 +61,27 @@ export default function ProgressoPage() {
   const modelo = modeloQuery.data ?? [];
   const diagnosticos = diagQuery.data ?? [];
 
-  if (!usuario) return null;
+  if (!usuario) return (
+    <div className="space-y-6">
+      <div>
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="mt-2 h-4 w-64" />
+      </div>
+      <div className="grid gap-4 sm:grid-cols-3">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="rounded-xl border border-border bg-card p-6">
+            <Skeleton className="mx-auto size-24 rounded-full" />
+          </div>
+        ))}
+      </div>
+      <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+        <Skeleton className="h-5 w-40" />
+        {[1, 2, 3].map((i) => (
+          <Skeleton key={i} className="h-12 w-full" />
+        ))}
+      </div>
+    </div>
+  );
 
   const profMedia = modelo.length > 0
     ? modelo.reduce((a, m) => a + m.proficiency, 0) / modelo.length * 100

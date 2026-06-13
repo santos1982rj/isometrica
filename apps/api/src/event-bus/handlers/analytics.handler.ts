@@ -23,6 +23,7 @@ const EVENT_TYPE_MAP: Partial<Record<EventType, PrismaEventType>> = {
   [EventType.PAYMENT_SUCCEEDED]: PrismaEventType.PAYMENT_SUCCEEDED,
   [EventType.PAYMENT_FAILED]: PrismaEventType.PAYMENT_FAILED,
   [EventType.ENROLLMENT_CREATED]: PrismaEventType.ENROLLMENT_CREATED,
+  [EventType.XP_GAINED]: PrismaEventType.XP_GAINED,
 };
 
 @Injectable()

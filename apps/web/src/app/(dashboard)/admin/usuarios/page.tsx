@@ -9,6 +9,15 @@ import { Badge } from '@/components/ui/badge'
 import { Pagination } from '@/components/pagination'
 import { ListSkeleton, StatSkeleton } from '@/components/skeleton-loading'
 import { Users, Search, Shield, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel,
+} from '@/components/ui/alert-dialog'
 
 const container = {
   hidden: {},
@@ -38,6 +47,9 @@ export default function AdminUsuariosPage() {
   const [novoPapel, setNovoPapel] = useState<Papel>('STUDENT')
   const ITENS_POR_PAGINA = 10
   const [paginaAtual, setPaginaAtual] = useState(1)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null)
+  const [confirmNome, setConfirmNome] = useState('')
 
   async function mudarPapel(userId: string, papel: Papel) {
     try {
@@ -46,11 +58,14 @@ export default function AdminUsuariosPage() {
     } catch { toast.error('Erro ao atualizar usuário') }
   }
 
-  async function remover(userId: string, nome: string) {
-    if (!confirm(`Remover ${nome}? Esta ação não pode ser desfeita.`)) return
-    try {
-      await deleteUser.mutateAsync(userId)
-    } catch { toast.error('Erro ao remover usuário') }
+  function remover(userId: string, nome: string) {
+    setConfirmNome(nome)
+    setPendingAction(() => async () => {
+      try {
+        await deleteUser.mutateAsync(userId)
+      } catch { toast.error('Erro ao remover usuário') }
+    })
+    setConfirmOpen(true)
   }
 
   const filtrados = usuarios.filter((u) =>
@@ -71,7 +86,7 @@ export default function AdminUsuariosPage() {
         <p className="mt-0.5 text-sm text-muted-foreground">Gerencie todos os usuários da plataforma</p>
       </motion.div>
 
-      <motion.div variants={item} className="grid grid-cols-4 gap-4">
+      <motion.div variants={item} className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="rounded-xl border border-border bg-card p-4 text-center">
           <p className="font-display text-2xl font-bold">{stats.total}</p>
           <p className="text-xs text-muted-foreground">Total</p>
@@ -171,6 +186,18 @@ export default function AdminUsuariosPage() {
           onPageChange={setPaginaAtual}
         />
       )}
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover usuário</AlertDialogTitle>
+            <AlertDialogDescription>Remover {confirmNome}? Esta ação não pode ser desfeita. O usuário será removido permanentemente da plataforma.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setConfirmOpen(false)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={() => { pendingAction?.(); setConfirmOpen(false) }}>Remover</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   )
 }

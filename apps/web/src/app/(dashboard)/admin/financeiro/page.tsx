@@ -43,7 +43,7 @@ export default function AdminFinanceiroPage() {
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-5">
       <motion.div variants={item}>
         <h1 className="font-display text-2xl font-bold">Financeiro</h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">Visão geral das assinaturas e receita</p>
+        <p className="mt-0.5 text-sm text-muted-foreground">Visão geral das assinaturas e receita — dados em preparação para o beta</p>
       </motion.div>
 
       <motion.div variants={item} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -66,7 +66,7 @@ export default function AdminFinanceiroPage() {
         ))}
       </motion.div>
 
-      <div className="grid gap-5 lg:grid-cols-3">
+      <div className="grid gap-5 sm:grid-cols-1 lg:grid-cols-3">
         <motion.div variants={item} className="bento-card rounded-xl border border-border bg-card p-5 lg:col-span-2">
           <div className="mb-4 flex items-center gap-2">
             <div className="flex size-7 items-center justify-center rounded-md bg-isometrica-primary/10">

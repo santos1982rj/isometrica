@@ -17,7 +17,7 @@ export class QuestionGeneratorService {
     if (key) this.client = new OpenAI({ apiKey: key, baseURL: CONFIG.groq.baseUrl });
   }
 
-  async generateWithAI(topicId: string, count: number = 3, difficulty?: string) {
+  async generateWithAI(topicId: string, count: number = 3, difficulty?: string, userId?: string) {
     if (!this.client) throw new Error('GROQ_API_KEY não configurada');
 
     const topic = await this.prisma.topic.findUnique({ where: { id: topicId }, include: { subject: true } });
@@ -46,6 +46,7 @@ export class QuestionGeneratorService {
         data: {
           text: q.text, difficulty: q.difficulty ?? 'MEDIUM', bloomLevel: q.bloomLevel ?? 'REMEMBER',
           explanation: q.explanation, topicId,
+          createdById: userId,
           alternatives: { create: q.alternatives?.map((a: { text: string; isCorrect: boolean; feedback?: string }) => ({ text: a.text, isCorrect: a.isCorrect ?? false, feedback: a.feedback })) ?? [] },
         },
         include: { alternatives: true },
@@ -56,7 +57,7 @@ export class QuestionGeneratorService {
     return created;
   }
 
-  async importQuestions(data: Record<string, unknown>[]) {
+  async importQuestions(data: Record<string, unknown>[], userId?: string) {
     let created = 0; let failed = 0; const errors: string[] = []
     for (const q of data) {
       try {
@@ -67,6 +68,7 @@ export class QuestionGeneratorService {
             bloomLevel: ((q.bloomLevel as string) ?? 'REMEMBER') as BloomLevel, estimatedTime: (q.estimatedTime as number) ?? 5,
             explanation: q.explanation as string, topicId: q.topicId as string, examId: q.examId as string,
             status: 'PUBLICADA',
+            createdById: userId,
             alternatives: q.alternatives ? { create: (q.alternatives as { text: string; isCorrect: boolean; feedback?: string }[]).map((a) => ({ text: a.text, isCorrect: a.isCorrect ?? false, feedback: a.feedback })) } : undefined,
             tags: q.tags ? { create: (q.tags as string[]).map((t) => ({ tag: t })) } : undefined,
           },

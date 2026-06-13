@@ -30,4 +30,10 @@ export class GamificationController {
   getLeaderboard(@Query('limit') limit?: string) {
     return this.gamificationService.getLeaderboard(limit ? parseInt(limit, 10) : 10);
   }
+
+  @Get('xp-history/:userId')
+  getXpHistory(@Param('userId') userId: string, @CurrentUser('id') currentUserId: string, @CurrentUser('papel') role: UserRole) {
+    const targetUserId = role === UserRole.ADMIN ? userId : currentUserId;
+    return this.gamificationService.getXpHistory(targetUserId);
+  }
 }

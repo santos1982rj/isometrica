@@ -61,15 +61,17 @@ export default function AssinaturaPage() {
         )}
       </motion.div>
 
-      {carregando ? (
-        <div className="grid gap-6 md:grid-cols-2">
+      {carregando || !planos ? (
+        <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2">
           {[1, 2].map((i) => (
             <div key={i} className="h-72 animate-pulse rounded-xl bg-muted" />
           ))}
         </div>
+      ) : planos.length === 0 ? (
+        <p className="py-12 text-center text-sm text-muted-foreground">Nenhum plano disponível no momento.</p>
       ) : (
-        <motion.div variants={container} className="grid gap-6 md:grid-cols-2">
-          {planos?.map((plano, idx) => {
+        <motion.div variants={container} className="grid gap-6 sm:grid-cols-1 md:grid-cols-2">
+          {planos.map((plano, idx) => {
             const isPremiumPlan = plano.name !== 'Gratuito'
             const isAtivo = assinaturaAtiva?.planId === plano.id
             const price = Number(plano.price)

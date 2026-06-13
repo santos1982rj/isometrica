@@ -231,6 +231,14 @@ export function useLeaderboard(limit = 10) {
   });
 }
 
+export function useXpHistory(userId: string) {
+  return useQuery({
+    queryKey: ['gamification', 'xp-history', userId],
+    queryFn: () => api.gamification.xpHistory(userId),
+    enabled: !!userId,
+  });
+}
+
 export function useProfessorAnalytics() {
   return useQuery<ProfessorAnalytics>({
     queryKey: ['analytics', 'professor'],

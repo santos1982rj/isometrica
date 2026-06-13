@@ -25,6 +25,7 @@ import {
   SidebarInset,
   SidebarTrigger,
 } from '@/components/ui/sidebar'
+import { toast } from 'sonner'
 import type { LucideIcon } from 'lucide-react'
 import {
   LayoutDashboard,
@@ -155,13 +156,21 @@ function SidebarNav({ pathname, role }: { pathname: string; role: string }) {
         <SidebarGroupContent>
           <SidebarMenu>
             {menuProfessor.map((item) => (
-              <SidebarMenuItem key={item.href}>
-                <Link href={item.href}>
-                  <SidebarMenuButton isActive={isActive(item.href)}>
-                    <item.icone className="size-4" />
-                    <span>{item.rotulo}</span>
-                  </SidebarMenuButton>
-                </Link>
+              <SidebarMenuItem key={item.href || item.rotulo}>
+                {item.href === '#' || item.href === '' ? (
+                  <div className="relative flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground/50 cursor-not-allowed select-none">
+                    <item.icone className="size-4 shrink-0" />
+                    <span className="flex-1">{item.rotulo}</span>
+                    <span className="rounded-full bg-muted px-1.5 py-0.5 text-[8px] font-medium text-muted-foreground">Em breve</span>
+                  </div>
+                ) : (
+                  <Link href={item.href}>
+                    <SidebarMenuButton isActive={pathname === item.href || pathname.startsWith(item.href + '/')}>
+                      <item.icone className="size-4" />
+                      <span>{item.rotulo}</span>
+                    </SidebarMenuButton>
+                  </Link>
+                )}
               </SidebarMenuItem>
             ))}
           </SidebarMenu>
@@ -177,13 +186,21 @@ function SidebarNav({ pathname, role }: { pathname: string; role: string }) {
         <SidebarGroupContent>
           <SidebarMenu>
             {menuAdmin.map((item) => (
-              <SidebarMenuItem key={item.href}>
-                <Link href={item.href}>
-                  <SidebarMenuButton isActive={isActive(item.href)}>
-                    <item.icone className="size-4" />
-                    <span>{item.rotulo}</span>
-                  </SidebarMenuButton>
-                </Link>
+              <SidebarMenuItem key={item.href || item.rotulo}>
+                {item.href === '#' || item.href === '' ? (
+                  <div className="relative flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground/50 cursor-not-allowed select-none">
+                    <item.icone className="size-4 shrink-0" />
+                    <span className="flex-1">{item.rotulo}</span>
+                    <span className="rounded-full bg-muted px-1.5 py-0.5 text-[8px] font-medium text-muted-foreground">Em breve</span>
+                  </div>
+                ) : (
+                  <Link href={item.href}>
+                    <SidebarMenuButton isActive={pathname === item.href || pathname.startsWith(item.href + '/')}>
+                      <item.icone className="size-4" />
+                      <span>{item.rotulo}</span>
+                    </SidebarMenuButton>
+                  </Link>
+                )}
               </SidebarMenuItem>
             ))}
           </SidebarMenu>
@@ -225,10 +242,12 @@ function SidebarNav({ pathname, role }: { pathname: string; role: string }) {
           <SidebarMenu>
             {menuEstudanteExtra.map((item) => (
               <SidebarMenuItem key={item.rotulo}>
-                <SidebarMenuButton>
-                  <item.icone className="size-4" />
-                  <span>{item.rotulo}</span>
-                </SidebarMenuButton>
+                <Link href={item.href}>
+                  <SidebarMenuButton>
+                    <item.icone className="size-4" />
+                    <span>{item.rotulo}</span>
+                  </SidebarMenuButton>
+                </Link>
               </SidebarMenuItem>
             ))}
           </SidebarMenu>
@@ -292,7 +311,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               7 dias
             </div>
 
-            <button className="relative flex size-8 items-center justify-center rounded-lg border border-border bg-transparent text-muted-foreground transition-all hover:bg-muted hover:text-foreground">
+            <button aria-label="Notificações" onClick={() => toast.info('Notificações em breve')} className="relative flex size-8 items-center justify-center rounded-lg border border-border bg-transparent text-muted-foreground transition-all hover:bg-muted hover:text-foreground">
               <Bell className="size-4" />
               <span className="absolute right-2 top-2 size-2 rounded-full bg-isometrica-accent border-2 border-card" />
             </button>

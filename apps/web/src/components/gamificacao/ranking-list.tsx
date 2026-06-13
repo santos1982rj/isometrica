@@ -29,33 +29,37 @@ export function RankingList({ ranking }: RankingListProps) {
         </div>
         <h3 className="text-sm font-semibold">Ranking</h3>
       </div>
-      <div className="flex flex-col gap-3">
-        {ranking.map((user) => (
-          <div
-            key={user.pos}
-            className={`flex items-center gap-3 rounded-lg p-2.5 transition-colors ${
-              user.isMe ? 'bg-isometrica-accent/5 ring-1 ring-isometrica-accent/20' : 'hover:bg-muted'
-            }`}
-          >
-            <span className="flex w-5 justify-center">
-              {user.pos === 1 ? <Medal className="size-5 text-yellow-500" /> :
-               user.pos === 2 ? <Medal className="size-5 text-slate-400" /> :
-               user.pos === 3 ? <Medal className="size-5 text-amber-700" /> :
-               <span className="text-sm font-bold text-muted-foreground">{user.pos}</span>}
-            </span>
-            <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-isometrica-accent to-orange-400 text-xs font-bold text-white">
-              {user.name[0]}
+      {ranking.length === 0 ? (
+        <p className="py-6 text-center text-xs text-muted-foreground">Nenhum dado disponível</p>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {ranking.map((user) => (
+            <div
+              key={user.pos}
+              className={`flex items-center gap-3 rounded-lg p-2.5 transition-colors ${
+                user.isMe ? 'bg-isometrica-accent/5 ring-1 ring-isometrica-accent/20' : 'hover:bg-muted'
+              }`}
+            >
+              <span className="flex w-5 justify-center">
+                {user.pos === 1 ? <Medal className="size-5 text-yellow-500" /> :
+                 user.pos === 2 ? <Medal className="size-5 text-slate-400" /> :
+                 user.pos === 3 ? <Medal className="size-5 text-amber-700" /> :
+                 <span className="text-sm font-bold text-muted-foreground">{user.pos}</span>}
+              </span>
+              <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-isometrica-accent to-orange-400 text-xs font-bold text-white">
+                {user.name[0]}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold leading-tight">{user.name}</p>
+                <p className="text-[10px] text-muted-foreground">Nível {user.level}</p>
+              </div>
+              <span className="text-xs font-bold tabular-nums text-muted-foreground">
+                {user.xp.toLocaleString()}
+              </span>
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold leading-tight">{user.name}</p>
-              <p className="text-[10px] text-muted-foreground">Nível {user.level}</p>
-            </div>
-            <span className="text-xs font-bold tabular-nums text-muted-foreground">
-              {user.xp.toLocaleString()}
-            </span>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </motion.div>
   )
 }

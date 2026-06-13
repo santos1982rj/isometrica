@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { UserRole } from '../../generated/prisma/enums';
 import type { QuestionType, QuestionDifficulty, BloomLevel, QuestionStatus } from '../../generated/prisma/enums';
 import type { QuestionWhereInput, QuestionOrderByWithRelationInput, QuestionUpdateInput } from '../../generated/prisma/models';
 
@@ -69,13 +70,21 @@ export class QuestionCrudService {
     return this.hideAnswerKey(q);
   }
 
+  private async assertQuestionOwnerOrAdmin(questionId: string, userId: string, role: UserRole) {
+    const q = await this.prisma.question.findUnique({ where: { id: questionId }, select: { createdById: true } });
+    if (!q) throw new NotFoundException('Questão não encontrada');
+    if (role !== UserRole.ADMIN && q.createdById !== userId) {
+      throw new ForbiddenException('Você não tem permissão para modificar esta questão');
+    }
+  }
+
   async create(data: {
     text: string; type?: string; difficulty?: string; bloomLevel?: string;
     estimatedTime?: number; explanation?: string; resolutionUrl?: string;
     topicId: string; lessonId?: string; examId?: string;
     alternatives?: { text: string; isCorrect: boolean; feedback?: string }[];
     tags?: string[];
-  }) {
+  }, userId?: string) {
     const question = await this.prisma.question.create({
       data: {
         text: data.text, type: (data.type ?? 'MULTIPLA_ESCOLHA') as QuestionType,
@@ -84,6 +93,7 @@ export class QuestionCrudService {
         estimatedTime: data.estimatedTime ?? 5,
         explanation: data.explanation, resolutionUrl: data.resolutionUrl,
         topicId: data.topicId, lessonId: data.lessonId, examId: data.examId,
+        createdById: userId,
         alternatives: data.alternatives ? { create: data.alternatives } : undefined,
         tags: data.tags ? { create: data.tags.map((t) => ({ tag: t })) } : undefined,
       },
@@ -94,13 +104,13 @@ export class QuestionCrudService {
     return question;
   }
 
-  async update(id: string, data: Record<string, unknown>) {
-    const q = await this.prisma.question.findUnique({ where: { id } });
-    if (!q) throw new NotFoundException('Questão não encontrada');
+  async update(id: string, data: Record<string, unknown>, userId: string, role: UserRole) {
+    await this.assertQuestionOwnerOrAdmin(id, userId, role);
     return this.prisma.question.update({ where: { id }, data: data as QuestionUpdateInput, include: { topic: true, exam: true, alternatives: true, tags: true } });
   }
 
-  async remove(id: string) {
+  async remove(id: string, userId: string, role: UserRole) {
+    await this.assertQuestionOwnerOrAdmin(id, userId, role);
     await this.prisma.question.delete({ where: { id } });
     return { message: 'Questão removida' };
   }

@@ -31,27 +31,31 @@ export function XpTimeline({ xpHistory }: XpTimelineProps) {
           <h3 className="text-sm font-semibold">Histórico de XP</h3>
         </div>
       </div>
-      <div className="flex flex-col gap-0">
-        {xpHistory.map((item, i) => (
-          <div
-            key={i}
-            className={`flex items-start gap-3 py-3 ${i < xpHistory.length - 1 ? 'border-b border-border' : ''}`}
-          >
-            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted">
-              <item.icon className="size-4 text-muted-foreground" />
+      {xpHistory.length === 0 ? (
+        <p className="py-6 text-center text-xs text-muted-foreground">Nenhuma atividade recente</p>
+      ) : (
+        <div className="flex flex-col gap-0">
+          {xpHistory.map((item, i) => (
+            <div
+              key={i}
+              className={`flex items-start gap-3 py-3 ${i < xpHistory.length - 1 ? 'border-b border-border' : ''}`}
+            >
+              <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted">
+                <item.icon className="size-4 text-muted-foreground" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium">{item.action}</p>
+                <p className="text-[11px] text-muted-foreground">{item.time}</p>
+              </div>
+              {item.xp > 0 && (
+                <Badge variant="secondary" className="shrink-0 bg-isometrica-success/10 text-isometrica-success text-[10px] font-semibold">
+                  +{item.xp} XP
+                </Badge>
+              )}
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium">{item.action}</p>
-              <p className="text-[11px] text-muted-foreground">{item.time}</p>
-            </div>
-            {item.xp > 0 && (
-              <Badge variant="secondary" className="shrink-0 bg-isometrica-success/10 text-isometrica-success text-[10px] font-semibold">
-                +{item.xp} XP
-              </Badge>
-            )}
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </motion.div>
   )
 }

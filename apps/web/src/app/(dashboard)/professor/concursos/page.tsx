@@ -13,6 +13,10 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel,
+} from '@/components/ui/alert-dialog'
 
 const itemAnim = {
   hidden: { opacity: 0, y: 16 },
@@ -49,6 +53,8 @@ export default function ProfessorConcursosPage() {
   const [editId, setEditId] = useState<string | null>(null)
   const [form, setForm] = useState<ExamForm>(emptyForm)
   const [selectedTopics, setSelectedTopics] = useState<Set<string>>(new Set())
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null)
 
   const exams = examsData?.data ?? []
   const total = examsData?.total ?? 0
@@ -94,10 +100,11 @@ export default function ProfessorConcursosPage() {
     } catch {}
   }
 
-  async function handleDelete(id: string) {
-    if (confirm('Excluir este concurso? Esta ação não pode ser desfeita.')) {
+  function handleDelete(id: string) {
+    setPendingAction(() => async () => {
       await deleteExam.mutateAsync(id)
-    }
+    })
+    setConfirmOpen(true)
   }
 
   function toggleTopic(topicId: string) {
@@ -227,6 +234,19 @@ export default function ProfessorConcursosPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir concurso</AlertDialogTitle>
+            <AlertDialogDescription>Esta ação não pode ser desfeita. O concurso e todos os seus dados serão removidos permanentemente.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setConfirmOpen(false)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={() => { pendingAction?.(); setConfirmOpen(false) }}>Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   )
 }

@@ -240,6 +240,7 @@ export const api = {
     atualizarStreak: (userId: string) =>
       request<PerfilGameficacao>(`/gamification/profile/${userId}/streak`, { method: 'POST' }),
     leaderboard: (limit = 10) => request<LeaderboardEntry[]>(`/gamification/leaderboard?limit=${limit}`),
+    xpHistory: (userId: string) => request<{ id: string; action: string; xp: number; total: number; date: string }[]>(`/gamification/xp-history/${userId}`),
   },
 
   profile: {

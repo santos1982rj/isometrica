@@ -30,7 +30,17 @@ export default function MeuPerfilPage() {
     </div>
   )
 
-  if (!data) return null
+  if (!data) return (
+    <div className="mx-auto max-w-5xl space-y-6 pb-12">
+      <div className="h-48 animate-pulse rounded-2xl bg-muted" />
+      <StatSkeleton count={4} />
+      <div className="grid gap-5 lg:grid-cols-2">
+        {[1, 2].map((i) => (
+          <div key={i} className="h-40 animate-pulse rounded-xl bg-muted" />
+        ))}
+      </div>
+    </div>
+  )
 
   const isProfessor = data.user?.role === 'PROFESSOR'
   const u = data.user
@@ -69,8 +79,8 @@ export default function MeuPerfilPage() {
               <div className="mt-3 flex items-center gap-2 flex-wrap">
                 {u.lattes && <a href={u.lattes} target="_blank" className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-xs text-white/80 hover:bg-white/20 transition-colors">Lattes <ExternalLink className="size-3" /></a>}
                 {u.linkedin && <a href={u.linkedin} target="_blank" className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-xs text-white/80 hover:bg-white/20 transition-colors">LinkedIn <ExternalLink className="size-3" /></a>}
-                {u.instagram && <a href={u.instagram} target="_blank" className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-xs text-white/80 hover:bg-white/20 transition-colors">Instagram <ExternalLink className="size-3" /></a>}
-                {u.twitter && <a href={u.twitter} target="_blank" className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-xs text-white/80 hover:bg-white/20 transition-colors">Twitter <ExternalLink className="size-3" /></a>}
+                {u.instagram && <a href={u.instagram.startsWith('http') ? u.instagram : `https://instagram.com/${u.instagram.replace(/^@/, '')}`} target="_blank" className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-xs text-white/80 hover:bg-white/20 transition-colors">Instagram <ExternalLink className="size-3" /></a>}
+                {u.twitter && <a href={u.twitter.startsWith('http') ? u.twitter : `https://x.com/${u.twitter.replace(/^@/, '')}`} target="_blank" className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-xs text-white/80 hover:bg-white/20 transition-colors">Twitter <ExternalLink className="size-3" /></a>}
               </div>
             )}
           </div>

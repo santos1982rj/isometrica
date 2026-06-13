@@ -173,13 +173,13 @@ export default function CriarCursoPage() {
               <h2 className="font-display text-lg font-bold">Dados do Curso</h2>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Nome do Curso *</label>
-                <input value={nome} onChange={e => setNome(e.target.value)}
+                <input value={nome} onChange={e => setNome(e.target.value)} aria-label="Nome do Curso"
                   className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-isometrica-accent focus:ring-2 focus:ring-isometrica-accent/15"
                   placeholder="Ex: Resistência dos Materiais I" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Descrição *</label>
-                <textarea value={descricao} onChange={e => setDescricao(e.target.value)} rows={3}
+                <textarea value={descricao} onChange={e => setDescricao(e.target.value)} rows={3} aria-label="Descrição"
                   className="w-full resize-none rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-isometrica-accent"
                   placeholder="Descreva o que o aluno vai aprender..." />
               </div>
@@ -201,7 +201,7 @@ export default function CriarCursoPage() {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Cor do Curso</label>
-                <div className="grid grid-cols-6 gap-2">
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                   {colors.map((c) => (
                     <button key={c.value} onClick={() => setColor(c.value)}
                       className={`relative h-12 rounded-xl bg-gradient-to-br ${c.value} transition-all ${
@@ -240,7 +240,7 @@ export default function CriarCursoPage() {
 
               {/* Adicionar módulo */}
               <div className="flex gap-2">
-                <input value={novoModNome} onChange={e => setNovoModNome(e.target.value)}
+                <input value={novoModNome} onChange={e => setNovoModNome(e.target.value)} aria-label="Nome do módulo"
                   onKeyDown={e => e.key === 'Enter' && addModulo()}
                   className="flex-1 rounded-lg border border-border bg-background px-4 py-2 text-sm outline-none focus:border-isometrica-accent"
                   placeholder="Nome do módulo..." />
@@ -304,11 +304,11 @@ export default function CriarCursoPage() {
 
                   {/* Form de nova aula */}
                   <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
-                    <input value={novaAulaTitulo} onChange={e => setNovaAulaTitulo(e.target.value)}
+                    <input value={novaAulaTitulo} onChange={e => setNovaAulaTitulo(e.target.value)} aria-label="Título da aula"
                       className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-isometrica-accent"
                       placeholder="Título da aula..." />
 
-                    <input value={novaAulaUrl} onChange={e => setNovaAulaUrl(e.target.value)}
+                    <input value={novaAulaUrl} onChange={e => setNovaAulaUrl(e.target.value)} aria-label="URL do vídeo"
                       className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-isometrica-accent"
                       placeholder="URL do YouTube..." />
 
@@ -359,7 +359,7 @@ export default function CriarCursoPage() {
               {premium && (
                 <div className="space-y-1">
                   <label className="text-sm font-medium">Preço (R$)</label>
-                  <input type="number" value={preco} onChange={e => setPreco(Number(e.target.value))} min={0} step={0.5}
+                  <input type="number" value={preco} onChange={e => setPreco(Number(e.target.value))} min={0} step={0.5} aria-label="Preço"
                     className="w-full rounded-lg border border-border bg-background px-4 py-2 text-sm outline-none focus:border-isometrica-accent" />
                 </div>
               )}

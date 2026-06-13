@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { useCourses } from '@/lib/queries'
 import type { Curso } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
+import { EmptyState } from '@/components/ui/empty-state'
 import { BookOpen, ChevronRight, GraduationCap } from 'lucide-react'
 
 const container = {
@@ -49,9 +50,15 @@ export default function CursosPage() {
             </div>
           ))}
         </div>
+      ) : !cursos || cursos.length === 0 ? (
+        <EmptyState
+          icon={BookOpen}
+          title="Nenhum curso disponível"
+          description="Em breve novos cursos serão adicionados."
+        />
       ) : (
         <motion.div variants={container} className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {cursos?.map((curso, idx) => {
+          {cursos.map((curso, idx) => {
             const totalAulas = curso.modules?.reduce((a, m) => a + (m.lessons?.length ?? 0), 0) ?? 0
             const totalModulos = curso.modules?.length ?? 0
             const grad = gradients[idx % gradients.length]
@@ -93,9 +100,7 @@ export default function CursosPage() {
                           Continuar curso
                           <ChevronRight className="size-3 transition-transform group-hover:translate-x-0.5" />
                         </span>
-                        <span className="text-[10px] text-muted-foreground">
-                          {Math.floor(Math.random() * 60) + 20}% completo
-                        </span>
+                        <span className="text-[10px] text-muted-foreground">—</span>
                       </div>
                     </div>
                   </div>

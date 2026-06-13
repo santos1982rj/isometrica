@@ -1,6 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import { toast } from 'sonner'
 import { Sparkles } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -33,26 +34,30 @@ export function IaSuggestions({ recommendations }: IaSuggestionsProps) {
           <h3 className="text-sm font-semibold">IA Sugere</h3>
         </div>
       </div>
-      <div className="flex flex-col gap-0">
-        {recommendations.map((rec, i) => (
-          <div
-            key={rec.title}
-            className={`flex items-start gap-3 py-3 ${i < recommendations.length - 1 ? 'border-b border-border' : ''}`}
-          >
-            <div className={`flex size-6 shrink-0 items-center justify-center rounded-md ${rec.emojiBg}`}>
-              <rec.icon className="size-3 text-isometrica-accent" />
+      {recommendations.length === 0 ? (
+        <p className="py-6 text-center text-xs text-muted-foreground">Nenhuma recomendação no momento</p>
+      ) : (
+        <div className="flex flex-col gap-0">
+          {recommendations.map((rec, i) => (
+            <div
+              key={rec.title}
+              className={`flex items-start gap-3 py-3 ${i < recommendations.length - 1 ? 'border-b border-border' : ''}`}
+            >
+              <div className={`flex size-6 shrink-0 items-center justify-center rounded-md ${rec.emojiBg}`}>
+                <rec.icon className="size-3 text-isometrica-accent" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold">{rec.title}</p>
+                <p className="mt-0.5 text-[11px] leading-tight text-muted-foreground">{rec.desc}</p>
+                <p className="mt-0.5 text-[10px] text-muted-foreground">{rec.meta}</p>
+              </div>
+              <button onClick={() => toast.info('Funcionalidade em breve')} className="shrink-0 rounded-md border border-border px-2.5 py-1 text-[10px] font-semibold text-foreground transition-all hover:border-isometrica-accent hover:bg-isometrica-accent hover:text-white">
+                {rec.action}
+              </button>
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold">{rec.title}</p>
-              <p className="mt-0.5 text-[11px] leading-tight text-muted-foreground">{rec.desc}</p>
-              <p className="mt-0.5 text-[10px] text-muted-foreground">{rec.meta}</p>
-            </div>
-            <button className="shrink-0 rounded-md border border-border px-2.5 py-1 text-[10px] font-semibold text-foreground transition-all hover:border-isometrica-accent hover:bg-isometrica-accent hover:text-white">
-              {rec.action}
-            </button>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </motion.div>
   )
 }

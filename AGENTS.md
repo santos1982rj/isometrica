@@ -444,3 +444,35 @@ Identificadas 20+ categorias de falhas e gargalos:
 - Configurado no `opencode.json` como `mcpServers.open-design`
 - Aguardando daemon (desktop app ou portable) em `localhost:7456`
 - 259+ skills, 142+ design systems disponíveis via MCP
+
+---
+
+### Sessão 7 — Fix Resend MCP / Zod email regex (12/06/2026)
+
+#### Problema
+- **GPT 5.5** (e outros JSON Schema validators strictos) rejeitam as tools do Resend MCP
+- Erro: `Invalid JSON schema: regex lookaround is not supported. Found at $.properties.email.pattern`
+- **Causa raiz**: Zod v4.4.3 (usado pelo `resend-mcp`) define `z.email()` com regex:
+  ```
+  /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@(...)$/
+  ```
+  Os `(?!...)` são **negative lookaheads** — válidos em JavaScript, mas **inválidos em JSON Schema** (ECMA-262 regex não suporta lookaround).
+
+#### Solução
+1. **Wrapper permanente** (`~/.config/opencode/scripts/resend-mcp-wrapper.cmd`):
+   - Localiza o cache do npx para `resend-mcp`
+   - Procura por lookahead no Zod `regexes.js`/`regexes.cjs` — se encontrar, substitui por:
+     ```
+     /^([A-Za-z0-9_'+\-\.]+)@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/
+     ```
+   - Executa o `resend-mcp` original com os argumentos recebidos
+2. **Global `~/.config/opencode/opencode.json`**: comando alterado de `npx -y resend-mcp` para `cmd.exe /c ...resend-mcp-wrapper.cmd`
+3. **Patch manual**: caso o wrapper não seja usado (ex: execução direta via `npx`), o patch foi aplicado diretamente em:
+   - `zod/v4/core/regexes.js:31` (ESM)
+   - `zod/v4/core/regexes.cjs:62` (CJS)
+
+#### Observações
+- O patch é refeito automaticamente toda vez que o MCP server inicia (o wrapper detecta lookahead)
+- Se o `resend-mcp` for atualizado para uma versão com Zod sem esse bug, o wrapper não faz nada
+- O patch está no cache do npx (`_npx/5b00477b7fe701ab/`); se o npx limpar o cache, o wrapper reaplica
+- O wrapper está documentado inline (cabeçalho do `.cmd`)

@@ -23,6 +23,16 @@ import {
   BookOpen,
   FileQuestion,
 } from 'lucide-react'
+import { EmptyState } from '@/components/ui/empty-state'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel,
+} from '@/components/ui/alert-dialog'
 
 interface Modulo {
   id: string
@@ -61,6 +71,9 @@ export default function CursoDetalheProfessor(props: { params: Promise<{ id: str
   const [aulaConteudo, setAulaConteudo] = useState('')
   const [aulaVideoUrl, setAulaVideoUrl] = useState('')
   const [editandoAula, setEditandoAula] = useState<string | null>(null)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null)
+  const [confirmMessage, setConfirmMessage] = useState('')
 
   const [enviando, setEnviando] = useState(false)
 
@@ -116,14 +129,17 @@ export default function CursoDetalheProfessor(props: { params: Promise<{ id: str
     setShowModuloForm(true)
   }
 
-  async function removerModulo(modId: string) {
-    if (!confirm('Remover este módulo e todas as suas aulas?')) return
-    try {
-      await api.courses.removerModulo(modId)
-      queryClient.invalidateQueries({ queryKey: ['courses', id] })
-    } catch {
-      toast.error('Erro ao remover módulo')
-    }
+  function removerModulo(modId: string) {
+    setConfirmMessage('Remover este módulo e todas as suas aulas?')
+    setPendingAction(() => async () => {
+      try {
+        await api.courses.removerModulo(modId)
+        queryClient.invalidateQueries({ queryKey: ['courses', id] })
+      } catch {
+        toast.error('Erro ao remover módulo')
+      }
+    })
+    setConfirmOpen(true)
   }
 
   // Lesson CRUD
@@ -166,14 +182,17 @@ export default function CursoDetalheProfessor(props: { params: Promise<{ id: str
     }
   }
 
-  async function removerAula(aulaId: string) {
-    if (!confirm('Remover esta aula?')) return
-    try {
-      await api.courses.removerAula(aulaId)
-      queryClient.invalidateQueries({ queryKey: ['courses', id] })
-    } catch {
-      toast.error('Erro ao remover aula')
-    }
+  function removerAula(aulaId: string) {
+    setConfirmMessage('Remover esta aula?')
+    setPendingAction(() => async () => {
+      try {
+        await api.courses.removerAula(aulaId)
+        queryClient.invalidateQueries({ queryKey: ['courses', id] })
+      } catch {
+        toast.error('Erro ao remover aula')
+      }
+    })
+    setConfirmOpen(true)
   }
 
   if (isLoading) {
@@ -410,111 +429,127 @@ export default function CursoDetalheProfessor(props: { params: Promise<{ id: str
         </div>
 
         <div className="rounded-xl border border-border bg-card p-5">
-          <div className="space-y-4">
-            <div>
-              <label className="text-xs font-medium text-muted-foreground">Tópico</label>
-              <select
-                value={selectedTopic}
-                onChange={(e) => setSelectedTopic(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-isometrica-accent"
-              >
-                <option value="">Selecione um tópico</option>
-                {topics.map((t) => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))}
-              </select>
-            </div>
-
-            {selectedTopic && (
-              <div className="space-y-4 border-t border-border pt-4">
-                <p className="text-sm font-semibold">Nova Questão</p>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-muted-foreground">Enunciado *</label>
-                  <textarea value={qText} onChange={(e) => setQText(e.target.value)} rows={2} className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-isometrica-accent" placeholder="Digite o enunciado da questão" />
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-muted-foreground">Dificuldade</label>
-                    <select value={qDifficulty} onChange={(e) => setQDifficulty(e.target.value)} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-isometrica-accent">
-                      <option value="EASY">Fácil</option>
-                      <option value="MEDIUM">Médio</option>
-                      <option value="HARD">Difícil</option>
-                    </select>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-muted-foreground">Nível de Bloom</label>
-                    <select value={qBloom} onChange={(e) => setQBloom(e.target.value)} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-isometrica-accent">
-                      <option value="REMEMBER">Lembrar</option>
-                      <option value="UNDERSTAND">Entender</option>
-                      <option value="APPLY">Aplicar</option>
-                      <option value="ANALYZE">Analisar</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-muted-foreground">Explicação (opcional)</label>
-                  <textarea value={qExplanation} onChange={(e) => setQExplanation(e.target.value)} rows={2} className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-isometrica-accent" placeholder="Explicação que aparece após o aluno responder" />
-                </div>
-
-                <div className="space-y-2">
-                  <p className="text-xs font-medium text-muted-foreground">Alternativas * (marque a correta)</p>
-                  {qAlternatives.map((alt, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <button
-                        onClick={() => setQAlternatives(qAlternatives.map((a, j) => ({ ...a, isCorrect: j === i })))}
-                        className={`flex size-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold transition-all ${
-                          alt.isCorrect ? 'bg-isometrica-success text-white' : 'bg-muted text-muted-foreground'
-                        }`}
-                      >
-                        {String.fromCharCode(65 + i)}
-                      </button>
-                      <input
-                        value={alt.text}
-                        onChange={(e) => {
-                          const novo = [...qAlternatives]
-                          novo[i].text = e.target.value
-                          setQAlternatives(novo)
-                        }}
-                        className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-isometrica-accent"
-                        placeholder={`Alternativa ${String.fromCharCode(65 + i)}`}
-                      />
-                    </div>
-                  ))}
-                </div>
-
-                <button
-                  disabled={criandoQuestao || !qText.trim() || qAlternatives.some((a) => !a.text.trim()) || !qAlternatives.some((a) => a.isCorrect)}
-                  onClick={async () => {
-                    setCriandoQuestao(true)
-                    try {
-                      await createQuestion.mutateAsync({
-                        text: qText, topicId: selectedTopic, difficulty: qDifficulty,
-                        bloomLevel: qBloom, explanation: qExplanation || undefined,
-                        alternatives: qAlternatives,
-                      })
-                      setQText(''); setQExplanation(''); setQDifficulty('EASY')
-                      setQBloom('REMEMBER')
-                      setQAlternatives(qAlternatives.map((a) => ({ ...a, text: '', isCorrect: false })))
-                      qAlternatives[0].isCorrect = true
-                      toast.success('Questão criada com sucesso!')
-                    } catch {
-                      toast.error('Erro ao criar questão')
-                    } finally {
-                      setCriandoQuestao(false)
-                    }
-                  }}
-                  className="rounded-lg bg-isometrica-success px-4 py-2 text-xs font-semibold text-white hover:bg-isometrica-success/90 disabled:opacity-50"
+          {topics.length === 0 ? (
+            <EmptyState icon={BookOpen} title="Nenhum tópico disponível para este curso" description="Cadastre tópicos primeiro." />
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Tópico</label>
+                <select
+                  value={selectedTopic}
+                  onChange={(e) => setSelectedTopic(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-isometrica-accent"
                 >
-                  {criandoQuestao ? 'Salvando...' : 'Salvar Questão'}
-                </button>
+                  <option value="">Selecione um tópico</option>
+                  {topics.map((t) => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
               </div>
-            )}
-          </div>
+
+              {selectedTopic && (
+                <div className="space-y-4 border-t border-border pt-4">
+                  <p className="text-sm font-semibold">Nova Questão</p>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">Enunciado *</label>
+                    <textarea value={qText} onChange={(e) => setQText(e.target.value)} rows={2} className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-isometrica-accent" placeholder="Digite o enunciado da questão" />
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">Dificuldade</label>
+                      <select value={qDifficulty} onChange={(e) => setQDifficulty(e.target.value)} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-isometrica-accent">
+                        <option value="EASY">Fácil</option>
+                        <option value="MEDIUM">Médio</option>
+                        <option value="HARD">Difícil</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">Nível de Bloom</label>
+                      <select value={qBloom} onChange={(e) => setQBloom(e.target.value)} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-isometrica-accent">
+                        <option value="REMEMBER">Lembrar</option>
+                        <option value="UNDERSTAND">Entender</option>
+                        <option value="APPLY">Aplicar</option>
+                        <option value="ANALYZE">Analisar</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">Explicação (opcional)</label>
+                    <textarea value={qExplanation} onChange={(e) => setQExplanation(e.target.value)} rows={2} className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-isometrica-accent" placeholder="Explicação que aparece após o aluno responder" />
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground">Alternativas * (marque a correta)</p>
+                    {qAlternatives.map((alt, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <button
+                          onClick={() => setQAlternatives(qAlternatives.map((a, j) => ({ ...a, isCorrect: j === i })))}
+                          className={`flex size-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold transition-all ${
+                            alt.isCorrect ? 'bg-isometrica-success text-white' : 'bg-muted text-muted-foreground'
+                          }`}
+                        >
+                          {String.fromCharCode(65 + i)}
+                        </button>
+                        <input
+                          value={alt.text}
+                          onChange={(e) => {
+                            const novo = [...qAlternatives]
+                            novo[i].text = e.target.value
+                            setQAlternatives(novo)
+                          }}
+                          className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-isometrica-accent"
+                          placeholder={`Alternativa ${String.fromCharCode(65 + i)}`}
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  <button
+                    disabled={criandoQuestao || !qText.trim() || qAlternatives.some((a) => !a.text.trim()) || !qAlternatives.some((a) => a.isCorrect)}
+                    onClick={async () => {
+                      setCriandoQuestao(true)
+                      try {
+                        await createQuestion.mutateAsync({
+                          text: qText, topicId: selectedTopic, difficulty: qDifficulty,
+                          bloomLevel: qBloom, explanation: qExplanation || undefined,
+                          alternatives: qAlternatives,
+                        })
+                        setQText(''); setQExplanation(''); setQDifficulty('EASY')
+                        setQBloom('REMEMBER')
+                        setQAlternatives(qAlternatives.map((a) => ({ ...a, text: '', isCorrect: false })))
+                        qAlternatives[0].isCorrect = true
+                        toast.success('Questão criada com sucesso!')
+                      } catch {
+                        toast.error('Erro ao criar questão')
+                      } finally {
+                        setCriandoQuestao(false)
+                      }
+                    }}
+                    className="rounded-lg bg-isometrica-success px-4 py-2 text-xs font-semibold text-white hover:bg-isometrica-success/90 disabled:opacity-50"
+                  >
+                    {criandoQuestao ? 'Salvando...' : 'Salvar Questão'}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar remoção</AlertDialogTitle>
+            <AlertDialogDescription>{confirmMessage}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setConfirmOpen(false)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={() => { pendingAction?.(); setConfirmOpen(false) }}>Remover</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   )
 }

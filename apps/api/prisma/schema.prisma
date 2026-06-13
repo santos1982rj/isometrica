@@ -95,6 +95,8 @@ model User {
   reviewSchedules   ReviewSchedule[]
   simuladoSessions  SimuladoSession[]
   studentModels     StudentModel[]
+  createdQuestions  Question[]
+  createdExams      Exam[]
 }
 
 model Subject {
@@ -233,6 +235,7 @@ model Question {
   lessonId          String?
   examId            String?
   sourceQuestionId  String?
+  createdById       String?
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
 
@@ -241,6 +244,7 @@ model Question {
   exam             Exam?              @relation(fields: [examId], references: [id])
   sourceQuestion   Question?          @relation("QuestionRelation", fields: [sourceQuestionId], references: [id])
   derivedQuestions Question[]         @relation("QuestionRelation")
+  createdBy        User?              @relation(fields: [createdById], references: [id])
   alternatives     Alternative[]
   questionAttempts QuestionAttempt[]
   tags             QuestionTag[]
@@ -279,10 +283,14 @@ model Exam {
   timeLimit    Int?
   difficulty   String?
   area         String?
+  createdById  String?
   createdAt    DateTime @default(now())
 
   questions Question[]
   sessions  SimuladoSession[]
+  createdBy User?    @relation(fields: [createdById], references: [id])
+
+  @@index([createdById])
 }
 
 model SimuladoSession {

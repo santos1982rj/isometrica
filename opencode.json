@@ -1,14 +1,18 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "instructions": ["AGENTS.md"],
-  "plugin": ["~/.config/opencode/node_modules/superpowers"],
-  "mcpServers": {
+  "instructions": [
+    "AGENTS.md"
+  ],
+  "plugin": [
+    "~/.config/opencode/node_modules/superpowers"
+  ],
+  "mcp": {
     "open-design": {
-      "command": "node",
-      "args": ["C:\\dev\\isometrica\\node_modules\\open-design-mcp\\dist\\src\\server.js"],
-      "env": {
-        "OD_DAEMON_URL": "http://localhost:7456",
-        "OD_AUTH_MODE": "none"
+      "type": "local",
+      "command": ["npx", "-y", "open-design-mcp"],
+      "enabled": true,
+      "environment": {
+        "OD_DAEMON_URL": "http://127.0.0.1:50519"
       }
     }
   }

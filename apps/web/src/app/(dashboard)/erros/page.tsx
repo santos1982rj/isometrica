@@ -18,6 +18,15 @@ import {
   BarChart3,
   ChevronRight,
 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel,
+} from '@/components/ui/alert-dialog'
 
 interface ErrorEntry {
   id: string
@@ -42,10 +51,15 @@ export default function ErrosPage() {
   const [expandido, setExpandido] = useState<string | null>(null)
   const [refazendo, setRefazendo] = useState<Record<string, string>>({})
   const [mostrarFeedback, setMostrarFeedback] = useState<Record<string, boolean>>({})
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [pendingAction, setPendingAction] = useState<(() => Promise<void>) | null>(null)
 
-  async function limpar() {
-    if (!usuario || !confirm('Limpar histórico de erros?')) return
-    await limparErros(usuario.id)
+  function handleClearClick() {
+    setPendingAction(() => async () => {
+      if (!usuario) return
+      await limparErros(usuario.id)
+    })
+    setConfirmOpen(true)
   }
 
   function responder(questionId: string, alternativeId: string) {
@@ -81,7 +95,7 @@ export default function ErrosPage() {
           <p className="mt-0.5 text-sm text-muted-foreground">Revise e refaça as questões que você errou</p>
         </div>
         {erros.length > 0 && (
-          <button onClick={limpar} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3.5 py-2 text-xs font-semibold text-muted-foreground transition-all hover:text-isometrica-danger hover:border-isometrica-danger/30">
+          <button onClick={handleClearClick} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3.5 py-2 text-xs font-semibold text-muted-foreground transition-all hover:text-isometrica-danger hover:border-isometrica-danger/30">
             <Trash2 className="size-3.5" />
             Limpar histórico
           </button>
@@ -234,6 +248,18 @@ export default function ErrosPage() {
           </motion.div>
         </div>
       )}
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Limpar histórico de erros</AlertDialogTitle>
+            <AlertDialogDescription>Esta ação não pode ser desfeita. Todo o histórico de erros será removido permanentemente.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setConfirmOpen(false)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={async () => { await pendingAction?.(); setConfirmOpen(false) }}>Limpar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   )
 }

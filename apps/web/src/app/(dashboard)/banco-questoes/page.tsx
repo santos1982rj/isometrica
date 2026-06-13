@@ -75,7 +75,7 @@ export default function BancoQuestoesPage() {
         <p className="mt-0.5 text-sm text-muted-foreground">{total} questões disponíveis na plataforma</p>
       </motion.div>
 
-      <div className="grid gap-5 lg:grid-cols-4">
+      <div className="grid gap-5 sm:grid-cols-1 lg:grid-cols-4">
         {/* Sidebar — Busca + Filtros + Árvore */}
         <motion.div variants={item} className="space-y-4 lg:col-span-1">
           {/* Busca */}

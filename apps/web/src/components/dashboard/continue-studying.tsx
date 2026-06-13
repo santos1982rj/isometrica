@@ -40,7 +40,7 @@ export function ContinueStudying({ nextLessons }: ContinueStudyingProps) {
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         {nextLessons.length === 0 ? (
-          <p className="col-span-2 py-8 text-center text-sm text-muted-foreground">
+          <p className="col-span-1 sm:col-span-2 py-8 text-center text-sm text-muted-foreground">
             <span className="inline-flex items-center gap-1">Todos os cursos concluídos! <Sparkles className="size-3 text-isometrica-accent" /></span>
           </p>
         ) : (

@@ -9,6 +9,7 @@ interface SidebarCardProps {
   isPremium: boolean
   certificateEnabled: boolean
   temAcesso: boolean
+  semAulas?: boolean
   needsPurchase: boolean
   price: number
   totalLessons: number
@@ -24,7 +25,7 @@ interface SidebarCardProps {
 }
 
 export function SidebarCard({
-  isPremium, certificateEnabled, temAcesso, needsPurchase, price,
+  isPremium, certificateEnabled, temAcesso, semAulas, needsPurchase, price,
   totalLessons, estimatedHours, grad, firstLessonId, progresso,
   matriculando, comprando, onEnroll, onPurchase, onCertificate,
 }: SidebarCardProps) {
@@ -47,10 +48,17 @@ export function SidebarCard({
         </ul>
 
         {temAcesso ? (
-          <Link href={`/aulas/${firstLessonId}`}
-            className="mt-5 flex w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-isometrica-accent to-orange-400 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg no-underline">
-            <Play className="size-4" /> Continuar
-          </Link>
+          semAulas ? (
+            <button disabled
+              className="mt-5 flex w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-isometrica-accent to-orange-400 px-5 py-2.5 text-sm font-semibold text-white/60 shadow-md cursor-not-allowed no-underline">
+              <Play className="size-4" /> Indisponível
+            </button>
+          ) : (
+            <Link href={`/aulas/${firstLessonId}`}
+              className="mt-5 flex w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-isometrica-accent to-orange-400 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg no-underline">
+              <Play className="size-4" /> Continuar
+            </Link>
+          )
         ) : needsPurchase ? (
           <button onClick={onPurchase} disabled={comprando}
             className="mt-5 flex w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg disabled:opacity-60">

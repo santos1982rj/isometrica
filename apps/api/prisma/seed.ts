@@ -1,14 +1,25 @@
 import { PrismaClient } from '../src/generated/prisma/client';
-import { PrismaNeon } from '@prisma/adapter-neon';
-import { neonConfig } from '@neondatabase/serverless';
-import ws from 'ws';
 import * as bcrypt from 'bcrypt';
 
-neonConfig.webSocketConstructor = ws;
-
 const connectionString = process.env.DATABASE_URL!;
-const adapter = new PrismaNeon({ connectionString });
-const prisma = new PrismaClient({ adapter });
+const isNeon = connectionString.includes('neon.tech');
+let prisma: PrismaClient;
+
+function initPrisma() {
+  if (isNeon) {
+    const { PrismaNeon } = require('@prisma/adapter-neon');
+    const { neonConfig } = require('@neondatabase/serverless');
+    const ws = require('ws');
+    neonConfig.webSocketConstructor = ws;
+    return new PrismaClient({ adapter: new PrismaNeon({ connectionString }) });
+  }
+  const { PrismaPg } = require('@prisma/adapter-pg');
+  const pg = require('pg');
+  const pool = new pg.Pool({ connectionString });
+  return new PrismaClient({ adapter: new PrismaPg(pool) });
+}
+
+prisma = initPrisma();
 
 interface LessonInput {
   title: string
@@ -457,6 +468,11 @@ const questionsByTopic = [
 ]
 
 async function main() {
+  if (process.env.NODE_ENV === 'production') {
+    console.error('❌ Seed não pode ser executado em produção!')
+    process.exit(1)
+  }
+
   console.log('🌱 Iniciando seed...\n')
 
   // Cleanup existing seed data (respecting FK order)

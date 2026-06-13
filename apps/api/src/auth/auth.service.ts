@@ -36,7 +36,7 @@ export class AuthService {
 
     this.emailService.sendWelcome(dto.email, dto.nome ?? 'Estudante').catch(() => {});
 
-    return this.gerarToken(usuario.id, usuario.email);
+    return this.gerarToken(usuario.id, usuario.email, usuario.role);
   }
 
   async login(dto: LoginDto) {
@@ -54,7 +54,7 @@ export class AuthService {
       throw new UnauthorizedException('Email ou senha inválidos');
     }
 
-    return this.gerarToken(usuario.id, usuario.email);
+    return this.gerarToken(usuario.id, usuario.email, usuario.role);
   }
 
   async perfil(usuarioId: string) {
@@ -100,11 +100,11 @@ export class AuthService {
     }
   }
 
-  private gerarToken(usuarioId: string, email: string) {
-    const payload = { sub: usuarioId, email };
+  private gerarToken(usuarioId: string, email: string, role: string) {
+    const payload = { sub: usuarioId, email, role };
     return {
       access_token: this.jwtService.sign(payload),
-      usuario: { id: usuarioId, email },
+      usuario: { id: usuarioId, email, role },
     };
   }
 }

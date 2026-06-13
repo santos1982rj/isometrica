@@ -12,6 +12,7 @@ describe('GamificationService', () => {
   const mockPrisma = {
     gamificationProfile: {
       findUnique: vi.fn(),
+      findMany: vi.fn(),
       upsert: vi.fn(),
       update: vi.fn(),
     },
@@ -23,6 +24,9 @@ describe('GamificationService', () => {
       upsert: vi.fn(),
     },
     user: {
+      findMany: vi.fn(),
+    },
+    event: {
       findMany: vi.fn(),
     },
   };
@@ -150,6 +154,92 @@ describe('GamificationService', () => {
       );
       expect(result.progress).toBe(5);
       expect(result.name).toBe('responder-10-questoes');
+    });
+  });
+
+  describe('getLeaderboard', () => {
+    it('does not select private user fields for student-visible leaderboard', async () => {
+      mockPrisma.gamificationProfile.findMany.mockResolvedValue([]);
+
+      await service.getLeaderboard(5);
+
+      expect(mockPrisma.gamificationProfile.findMany).toHaveBeenCalledWith({
+        orderBy: { xp: 'desc' },
+        take: 5,
+        include: { user: { select: { id: true, name: true, imageUrl: true, title: true } } },
+      });
+    });
+  });
+
+  describe('unlockAchievement', () => {
+    it('does not create duplicate achievement with same name', async () => {
+      const mockProfile = { id: 'profile-1', userId: 'user-1', xp: 0, level: 1, streak: 0 };
+      mockPrisma.gamificationProfile.upsert.mockResolvedValue(mockProfile);
+      mockPrisma.achievement.findFirst.mockResolvedValue({ id: 'existing', name: 'Duplicate' });
+
+      const result = await service.unlockAchievement('user-1', 'Duplicate', 'Já existe', 'Star');
+
+      expect(result).toEqual({ id: 'existing', name: 'Duplicate' });
+      expect(mockPrisma.achievement.create).not.toHaveBeenCalled();
+    });
+
+    it('creates new achievement when no duplicate exists', async () => {
+      const mockProfile = { id: 'profile-1', userId: 'user-1', xp: 0, level: 1, streak: 0 };
+      mockPrisma.gamificationProfile.upsert.mockResolvedValue(mockProfile);
+      mockPrisma.achievement.findFirst.mockResolvedValue(null);
+      mockPrisma.achievement.create.mockResolvedValue({ id: 'new', name: 'Nova conquista' });
+
+      const result = await service.unlockAchievement('user-1', 'Nova conquista', 'Descrição', 'Star');
+
+      expect(result).toBeDefined();
+      expect(mockPrisma.achievement.create).toHaveBeenCalled();
+    });
+  });
+
+  describe('getXpHistory', () => {
+    it('returns events ordered by createdAt desc', async () => {
+      mockPrisma.event.findMany.mockResolvedValue([
+        { id: 'e2', type: 'XP_GAINED', metadata: { amount: 10, total: 60 }, createdAt: new Date('2026-06-12T20:00:00Z') },
+        { id: 'e1', type: 'XP_GAINED', metadata: { amount: 50, total: 50 }, createdAt: new Date('2026-06-12T19:00:00Z') },
+      ]);
+
+      const result = await service.getXpHistory('user-1');
+
+      expect(result).toHaveLength(2);
+      expect(result[0].xp).toBe(10);
+      expect(result[1].xp).toBe(50);
+      expect(mockPrisma.event.findMany).toHaveBeenCalledWith({
+        where: { userId: 'user-1', type: 'XP_GAINED' },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+      });
+    });
+
+    it('returns empty array when no XP events exist', async () => {
+      mockPrisma.event.findMany.mockResolvedValue([]);
+
+      const result = await service.getXpHistory('user-1');
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('getLeaderboard', () => {
+    it('does not return email or passwordHash in user data', async () => {
+      mockPrisma.gamificationProfile.findMany.mockResolvedValue([]);
+
+      const result = await service.getLeaderboard(10);
+
+      expect(mockPrisma.gamificationProfile.findMany).toHaveBeenCalledWith({
+        orderBy: { xp: 'desc' },
+        take: 10,
+        include: { user: { select: { id: true, name: true, imageUrl: true, title: true } } },
+      });
+      // Verify these fields are NOT selected by checking any result
+      const selectFields = (mockPrisma.gamificationProfile.findMany.mock.calls[0][0] as any).include.user.select;
+      expect(selectFields.email).toBeUndefined();
+      expect(selectFields.passwordHash).toBeUndefined();
+      expect(selectFields.role).toBeUndefined();
     });
   });
 

@@ -71,44 +71,44 @@ export class QuestionsController {
 
   @Post()
   @Roles(UserRole.PROFESSOR, UserRole.ADMIN)
-  create(@Body() dto: CreateQuestionDto) {
-    return this.questionsService.create(dto);
+  create(@Body() dto: CreateQuestionDto, @CurrentUser('id') userId: string) {
+    return this.questionsService.create(dto, userId);
   }
 
   @Put(':id')
   @Roles(UserRole.PROFESSOR, UserRole.ADMIN)
-  update(@Param('id') id: string, @Body() dto: UpdateQuestionDto) {
-    return this.questionsService.update(id, dto);
+  update(@Param('id') id: string, @Body() dto: UpdateQuestionDto, @CurrentUser('id') userId: string, @CurrentUser('papel') role: UserRole) {
+    return this.questionsService.update(id, dto, userId, role);
   }
 
   @Delete(':id')
-  @Roles(UserRole.ADMIN)
-  remove(@Param('id') id: string) {
-    return this.questionsService.remove(id);
+  @Roles(UserRole.PROFESSOR, UserRole.ADMIN)
+  remove(@Param('id') id: string, @CurrentUser('id') userId: string, @CurrentUser('papel') role: UserRole) {
+    return this.questionsService.remove(id, userId, role);
   }
 
   @Post('generate/:topicId')
   @Roles(UserRole.PROFESSOR, UserRole.ADMIN)
-  generateWithAI(@Param('topicId') topicId: string, @Body() body: { count?: number; difficulty?: string }) {
-    return this.questionsService.generateWithAI(topicId, body.count ?? 3, body.difficulty);
+  generateWithAI(@Param('topicId') topicId: string, @Body() body: { count?: number; difficulty?: string }, @CurrentUser('id') userId: string) {
+    return this.questionsService.generateWithAI(topicId, body.count ?? 3, body.difficulty, userId);
   }
 
   @Post('exams')
   @Roles(UserRole.PROFESSOR, UserRole.ADMIN)
-  createExam(@Body() dto: CreateExamDto) {
-    return this.questionsService.createExam(dto);
+  createExam(@Body() dto: CreateExamDto, @CurrentUser('id') userId: string) {
+    return this.questionsService.createExam(dto, userId);
   }
 
   @Put('exams/:id')
   @Roles(UserRole.PROFESSOR, UserRole.ADMIN)
-  updateExam(@Param('id') id: string, @Body() dto: UpdateExamDto) {
-    return this.questionsService.updateExam(id, dto);
+  updateExam(@Param('id') id: string, @Body() dto: UpdateExamDto, @CurrentUser('id') userId: string, @CurrentUser('papel') role: UserRole) {
+    return this.questionsService.updateExam(id, dto, userId, role);
   }
 
   @Delete('exams/:id')
   @Roles(UserRole.PROFESSOR, UserRole.ADMIN)
-  deleteExam(@Param('id') id: string) {
-    return this.questionsService.deleteExam(id);
+  deleteExam(@Param('id') id: string, @CurrentUser('id') userId: string, @CurrentUser('papel') role: UserRole) {
+    return this.questionsService.deleteExam(id, userId, role);
   }
 
   @Post('simulado/:examId/start')
@@ -132,7 +132,7 @@ export class QuestionsController {
 
   @Post('import')
   @Roles(UserRole.PROFESSOR, UserRole.ADMIN)
-  importQuestions(@Body() body: Record<string, unknown>) {
-    return this.questionsService.importQuestions(body.questions as Record<string, unknown>[]);
+  importQuestions(@Body() body: Record<string, unknown>, @CurrentUser('id') userId: string) {
+    return this.questionsService.importQuestions(body.questions as Record<string, unknown>[], userId);
   }
 }

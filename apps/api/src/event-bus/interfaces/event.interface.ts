@@ -16,6 +16,7 @@ export enum EventType {
   STREAK_UPDATED = 'streak.updated',
   LEVEL_UP = 'level.up',
   XP_GAINED = 'xp.gained',
+  SIMULADO_FINISHED = 'simulado.finished',
   SUBSCRIPTION_CREATED = 'subscription.created',
   SUBSCRIPTION_CANCELLED = 'subscription.cancelled',
   PAYMENT_SUCCEEDED = 'payment.succeeded',

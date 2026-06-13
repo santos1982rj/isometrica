@@ -13,13 +13,20 @@ export class ProgressService {
   ) {}
 
   async markProgress(userId: string, lessonId: string, completed: boolean) {
+    const existing = await this.prisma.lessonProgress.findUnique({
+      where: { userId_lessonId: { userId, lessonId } },
+    });
+
+    // Only publish LESSON_COMPLETED on first transition to completed
+    const isNewCompletion = completed && (!existing || !existing.completed);
+
     const progress = await this.prisma.lessonProgress.upsert({
       where: { userId_lessonId: { userId, lessonId } },
       update: { completed, progress: completed ? 100 : 0 },
       create: { userId, lessonId, completed, progress: completed ? 100 : 0 },
     });
 
-    if (completed) {
+    if (isNewCompletion) {
       await this.eventBus.publish({
         type: EventType.LESSON_COMPLETED,
         userId,

@@ -8,3 +8,5 @@ dist/
 .turbo/
 .playwright-mcp/
 .vercel
+playwright-report/
+test-results/

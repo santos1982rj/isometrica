@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventBusService } from '../event-bus/event-bus.service';
 import { EventType } from '../event-bus/interfaces/event.interface';
+import { EventType as PrismaEventType } from '../generated/prisma/enums';
 
 @Injectable()
 export class GamificationService {
@@ -139,7 +140,22 @@ export class GamificationService {
     return this.prisma.gamificationProfile.findMany({
       orderBy: { xp: 'desc' },
       take: limit,
-      include: { user: { select: { name: true, email: true } } },
+      include: { user: { select: { id: true, name: true, imageUrl: true, title: true } } },
     });
+  }
+
+  async getXpHistory(userId: string, limit = 20) {
+    const events = await this.prisma.event.findMany({
+      where: { userId, type: PrismaEventType.XP_GAINED },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+    return events.map(e => ({
+      id: e.id,
+      action: 'XP Ganho',
+      xp: ((e.metadata as Record<string, unknown>)?.amount as number) ?? 0,
+      total: ((e.metadata as Record<string, unknown>)?.total as number) ?? 0,
+      date: e.createdAt.toISOString(),
+    }));
   }
 }
