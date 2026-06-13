@@ -4,7 +4,7 @@ import { PrismaClient } from '../generated/prisma/client';
 import type { Prisma } from '../generated/prisma/client';
 
 function buildOptions(connectionString: string) {
-  if (connectionString.includes('neon.tech')) {
+  if (connectionString.includes('neon.tech') && !connectionString.includes('-pooler')) {
     const { PrismaNeon } = require('@prisma/adapter-neon');
     const { neonConfig } = require('@neondatabase/serverless');
     const ws = require('ws');
@@ -12,8 +12,8 @@ function buildOptions(connectionString: string) {
     return { adapter: new PrismaNeon({ connectionString }) };
   }
   const { PrismaPg } = require('@prisma/adapter-pg');
-  const pg = require('pg');
-  const pool = new pg.Pool({ connectionString });
+  const { Pool } = require('pg');
+  const pool = new Pool({ connectionString });
   return { adapter: new PrismaPg(pool) };
 }
 
