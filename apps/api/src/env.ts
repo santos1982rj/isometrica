@@ -5,7 +5,6 @@ export function validateEnv() {
     'DATABASE_URL',
     'JWT_SECRET',
     'GROQ_API_KEY',
-    'REDIS_URL',
   ] as const;
 
   const missing = required.filter(key => !process.env[key]);
