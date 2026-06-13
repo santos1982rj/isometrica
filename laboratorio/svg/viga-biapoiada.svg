@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 520" font-family="Inter, DM Sans, sans-serif">
+  <defs>
+    <marker id="arrow-down" markerWidth="8" markerHeight="6" refX="4" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#e85d32"/>
+    </marker>
+    <marker id="arrow-up" markerWidth="8" markerHeight="6" refX="4" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#1a2e3c"/>
+    </marker>
+    <marker id="arrow-right" markerWidth="6" markerHeight="8" refX="3" refY="4" orient="auto">
+      <path d="M0,0 L6,4 L0,8 Z" fill="#1a2e3c"/>
+    </marker>
+  </defs>
+
+  <!-- Fundo -->
+  <rect width="800" height="520" fill="#fafafa" rx="12"/>
+
+  <!-- Título -->
+  <text x="400" y="36" text-anchor="middle" font-size="18" font-weight="700" fill="#1a2e3c">Viga Biapoiada com Carga Distribuída</text>
+  <text x="400" y="54" text-anchor="middle" font-size="11" fill="#94a3b8">Diagrama de Momento Fletor — Convenção da NBR (lado tracionado)</text>
+
+  <!-- ===== VIGA ===== -->
+  <line x1="120" y1="120" x2="680" y2="120" stroke="#1a2e3c" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- Apoio fixo (A) - triângulo -->
+  <polygon points="120,120 100,160 140,160" fill="#1a2e3c"/>
+  <line x1="100" y1="160" x2="140" y2="160" stroke="#1a2e3c" stroke-width="3"/>
+  <line x1="95" y1="165" x2="145" y2="165" stroke="#1a2e3c" stroke-width="1.2"/>
+  <line x1="97" y1="170" x2="143" y2="170" stroke="#1a2e3c" stroke-width="1.2"/>
+  <line x1="99" y1="175" x2="141" y2="175" stroke="#1a2e3c" stroke-width="1.2"/>
+  <text x="120" y="192" text-anchor="middle" font-size="12" fill="#1a2e3c" font-weight="600">A</text>
+
+  <!-- Apoio móvel (B) - círculo -->
+  <circle cx="680" cy="160" r="12" fill="none" stroke="#1a2e3c" stroke-width="2.5"/>
+  <line x1="668" y1="170" x2="692" y2="170" stroke="#1a2e3c" stroke-width="2.5"/>
+  <text x="680" y="192" text-anchor="middle" font-size="12" fill="#1a2e3c" font-weight="600">B</text>
+
+  <!-- Dimensão L -->
+  <line x1="120" y1="205" x2="680" y2="205" stroke="#94a3b8" stroke-width="1"/>
+  <polygon points="120,202 126,205 120,208" fill="#94a3b8"/>
+  <polygon points="680,202 674,205 680,208" fill="#94a3b8"/>
+  <text x="400" y="218" text-anchor="middle" font-size="13" fill="#1a2e3c" font-weight="600">L (m)</text>
+
+  <!-- ===== CARGA DISTRIBUÍDA ===== -->
+  <g stroke="#e85d32" stroke-width="1.8" fill="none">
+    <line x1="145" y1="55" x2="145" y2="105" marker-end="url(#arrow-down)"/>
+    <line x1="200" y1="55" x2="200" y2="105" marker-end="url(#arrow-down)"/>
+    <line x1="255" y1="55" x2="255" y2="105" marker-end="url(#arrow-down)"/>
+    <line x1="310" y1="55" x2="310" y2="105" marker-end="url(#arrow-down)"/>
+    <line x1="365" y1="55" x2="365" y2="105" marker-end="url(#arrow-down)"/>
+    <line x1="420" y1="55" x2="420" y2="105" marker-end="url(#arrow-down)"/>
+    <line x1="475" y1="55" x2="475" y2="105" marker-end="url(#arrow-down)"/>
+    <line x1="530" y1="55" x2="530" y2="105" marker-end="url(#arrow-down)"/>
+    <line x1="585" y1="55" x2="585" y2="105" marker-end="url(#arrow-down)"/>
+    <line x1="640" y1="55" x2="640" y2="105" marker-end="url(#arrow-down)"/>
+  </g>
+  <line x1="130" y1="55" x2="670" y2="55" stroke="#e85d32" stroke-width="2" stroke-dasharray="4,3"/>
+  <text x="400" y="42" text-anchor="middle" font-size="13" fill="#e85d32" font-weight="600">q (kN/m)</text>
+
+  <!-- ===== DIAGRAMA DE MOMENTO FLETOR ===== -->
+
+  <!-- Linha de referência do DMF (zero) — alinhada com a viga -->
+  <line x1="120" y1="280" x2="680" y2="280" stroke="#1a2e3c" stroke-width="2"/>
+  <text x="105" y="284" text-anchor="end" font-size="10" fill="#1a2e3c">0</text>
+
+  <!-- Parábola do momento fletor — desenhada para BAIXO (lado tracionado = fibras inferiores) -->
+  <!-- M(x) = (q·L·x - q·x²)/2, máximo qL²/8 no centro -->
+  <!-- A curva desce a partir da linha de referência, com máximo de 140px no centro -->
+
+  <path d="M120,280 
+           C200,420 300,438 400,440 
+           C500,438 600,420 680,280"
+        fill="none" stroke="#1a2e3c" stroke-width="2.5"/>
+
+  <!-- Preenchimento do diagrama (lado tracionado) -->
+  <path d="M120,280 
+           C200,420 300,438 400,440 
+           C500,438 600,420 680,280 Z"
+        fill="#1a2e3c" fill-opacity="0.06"/>
+
+  <!-- Hachuras verticais no diagrama -->
+  <g stroke="#1a2e3c" stroke-width="0.5" stroke-dasharray="2,3" opacity="0.35">
+    <line x1="200" y1="280" x2="200" y2="395"/>
+    <line x1="280" y1="280" x2="280" y2="428"/>
+    <line x1="360" y1="280" x2="360" y2="438"/>
+    <line x1="440" y1="280" x2="440" y2="438"/>
+    <line x1="520" y1="280" x2="520" y2="428"/>
+    <line x1="600" y1="280" x2="600" y2="395"/>
+  </g>
+
+  <!-- Indicação do lado tracionado -->
+  <!-- Fibras inferiores tracionadas = desenho na parte de baixo -->
+  <text x="400" y="468" text-anchor="middle" font-size="10" fill="#e85d32" font-style="italic">▼ fibras tracionadas (inferiores)</text>
+
+  <!-- Linha pontilhada do eixo -->
+  <line x1="400" y1="120" x2="400" y2="280" stroke="#e85d32" stroke-width="1.2" stroke-dasharray="5,4"/>
+  <line x1="400" y1="280" x2="400" y2="440" stroke="#e85d32" stroke-width="1.2" stroke-dasharray="5,4"/>
+
+  <!-- Valor do momento máximo -->
+  <text x="410" y="450" text-anchor="start" font-size="13" fill="#e85d32" font-weight="700">M máx = qL² / 8</text>
+
+  <!-- Legenda -->
+  <g transform="translate(60, 490)">
+    <line x1="0" y1="0" x2="24" y2="0" stroke="#e85d32" stroke-width="2.5"/>
+    <text x="30" y="4" font-size="10" fill="#1a2e3c">Carga distribuída (q)</text>
+    <line x1="200" y1="0" x2="224" y2="0" stroke="#1a2e3c" stroke-width="2.5"/>
+    <text x="230" y="4" font-size="10" fill="#1a2e3c">DMF (lado tracionado)</text>
+  </g>
+</svg>
